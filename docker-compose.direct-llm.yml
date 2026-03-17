@@ -1,0 +1,32 @@
+services:
+  moviepilot-ai-recognizer-gateway:
+    image: liuyuexi/moviepilot-ai-recognizer-gateway:2.0.0-alpha.1
+    container_name: moviepilot-ai-recognizer-gateway
+    environment:
+      PORT: "9000"
+      # 推荐：优先使用方案 A
+      # 方案 A：MoviePilot 与 Gateway 在同一 Docker 网络中，直接写 MoviePilot 容器名
+      # 例如：http://moviepilot-v2:3001
+      # 方案 B：如果没有自定义网络名或不在同一 Docker 网络，可改成宿主机内网地址
+      # 例如：http://192.168.1.10:3001
+      # 不推荐：不要写成 http://127.0.0.1:3001 ，容器内的 127.0.0.1 指向当前容器自己
+      MP_BASE_URL: "http://moviepilot-v2:3001"
+      MP_API_KEY: "replace_with_moviepilot_api_key"
+      RECOGNIZER_MODE: "direct_llm"
+      LLM_BASE_URL: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+      LLM_API_KEY: "replace_with_llm_api_key"
+      LLM_MODEL: "qwen-plus" # 推荐先用 qwen-plus
+      LLM_TEMPERATURE: "0.1" # 结构化识别建议保持低温度
+      LLM_ENABLE_THINKING: "false" # 推荐保持 false，稳定输出 JSON
+      TMDB_API_KEY: "replace_with_tmdb_api_key"
+      RECOGNIZER_TIMEOUT_MS: "60000"
+    ports:
+      - "9000:9000"
+    restart: unless-stopped
+    networks:
+      - moviepilot
+
+networks:
+  moviepilot:
+    external: true
+    name: moviepilot
