@@ -1,78 +1,119 @@
 # moviepilot-ai-recognizer-gateway
 
-Dockerized gateway service for MoviePilot AI recognition fallback.
+一个面向 NAS 用户的 MoviePilot AI 识别网关服务。
 
-This repository is designed for DockerHub publishing and NAS-first deployment.
+这个仓库的目标是把 MoviePilot 的 AI 识别补救链路做成一个可以直接 `docker pull`、填写环境变量、然后启动使用的独立网关镜像。
 
-`v2.0` aims to make NAS usage simpler:
+`v2.0` 的核心方向是：
 
-- users can `docker pull` the gateway image
-- users can choose direct LLM API mode
-- OpenClaw becomes optional rather than mandatory
+- 默认主推 **直接大模型 API 模式**
+- 保留 **OpenClaw / 外部识别端兼容模式**
+- 降低 NAS 用户接入门槛
+- 让 DockerHub 分发更自然
 
-## Main Features
+## 这个仓库解决什么问题
 
-- accepts MoviePilot webhook requests
-- returns `202 Accepted` immediately
-- performs recognition asynchronously
-- supports:
-  - direct LLM API mode
-  - external recognizer mode
-- verifies or supplements recognition via TMDB when configured
-- calls MoviePilot callback API after recognition
+当 MoviePilot 原生 TMDB 识别失败时，插件会把标题转发给这个 Gateway。
 
-## Backend Modes
+Gateway 会：
 
-### direct_llm
+1. 立即返回 `202 Accepted`
+2. 在后台执行 AI 识别
+3. 根据需要补做 TMDB 校验或补全
+4. 回调 MoviePilot 插件接口
+5. 让插件继续触发二次整理
 
-Primary recommended mode for v2.0.
+这样可以避免 MoviePilot 在等待大模型时同步超时，也更适合 NAS 场景下的异步处理。
 
-The gateway directly calls an OpenAI-compatible Chat Completions API, such as:
+## 主要特性
+
+- 接收 MoviePilot Webhook 请求
+- 立即返回 `202 Accepted`
+- 后台异步识别
+- 支持两种后端模式：
+  - `direct_llm`
+  - `external_recognizer`
+- 可选 TMDB 校验 / 补全
+- 自动回调 MoviePilot 插件 API
+
+## 后端模式
+
+### 1. `direct_llm`
+
+这是 `v2.0` 的主推模式。
+
+Gateway 直接调用 **OpenAI 兼容的 Chat Completions API**，例如：
 
 - OpenAI
-- Qwen-compatible endpoints
+- 千问兼容接口
 - OpenRouter
 
-This is the recommended mode for NAS users because it removes the need to install OpenClaw separately.
+这也是最适合 NAS 用户的模式，因为：
 
-### external_recognizer
+- 不需要先安装 OpenClaw
+- 不需要宿主机桥接脚本
+- 更适合 DockerHub 镜像分发
 
-Compatibility mode.
+### 2. `external_recognizer`
 
-The gateway forwards recognition to a user-managed external recognizer endpoint, which may still be backed by OpenClaw or another custom service.
+这是兼容模式。
 
-## Intended DockerHub Flow
+Gateway 不直接调用大模型，而是把识别请求转发给用户自己提供的外部识别端。这个外部识别端可以由：
 
-Users should be able to:
+- OpenClaw
+- 自定义 AI 服务
+- 其他兼容服务
 
-1. `docker pull` the image
-2. set environment variables
-3. start the container
-4. point the MoviePilot plugin webhook URL to the container
+来实现。
 
-## Minimal v2.0 Direction
+这个模式的价值在于：
 
-Recommended default positioning:
+- 兼容已经在用 OpenClaw 的用户
+- 保留更复杂的自定义识别能力
+- 降低从 `v1` 迁移到 `v2` 的阻力
 
-- direct LLM API as the primary documented path
-- external recognizer as a compatibility fallback
+## DockerHub 使用方式
 
-## Related Docs
+目标体验应该是：
 
-- [LLM backend spec](/Volumes/acasis/Downloads/moviepilot-openclaw-forwarder-v2/docs/LLM_BACKEND_SPEC.md)
-- [Provider guide](/Volumes/acasis/Downloads/moviepilot-openclaw-forwarder-v2/docs/PROVIDER_GUIDE.md)
-- [DockerHub publish guide](/Volumes/acasis/Downloads/moviepilot-openclaw-forwarder-v2/gateway-image-repo/docs/DOCKERHUB_PUBLISH.md)
-- [Release checklist](/Volumes/acasis/Downloads/moviepilot-openclaw-forwarder-v2/gateway-image-repo/docs/RELEASE_CHECKLIST.md)
+1. `docker pull` 镜像
+2. 准备 `.env`
+3. 启动容器
+4. 在 MoviePilot 插件里填写 Gateway 地址
 
-## Recommended image name
+## 推荐镜像名
 
 ```text
 liuyuexi1987/moviepilot-ai-recognizer-gateway
 ```
 
-## Suggested Repository Metadata
+## 推荐仓库信息
 
-- Repository name:
+- 仓库名：
   - `moviepilot-ai-recognizer-gateway`
-- Description:
+- 仓库描述：
   - `Dockerized MoviePilot AI recognition gateway for NAS users, with direct LLM and OpenClaw-compatible modes`
+
+## 文档入口
+
+- [DockerHub 发布说明](/Volumes/acasis/Downloads/moviepilot-openclaw-forwarder-v2/gateway-image-repo/docs/DOCKERHUB_PUBLISH.md)
+- [Release 检查清单](/Volumes/acasis/Downloads/moviepilot-openclaw-forwarder-v2/gateway-image-repo/docs/RELEASE_CHECKLIST.md)
+- [LLM 后端规范](/Volumes/acasis/Downloads/moviepilot-openclaw-forwarder-v2/docs/LLM_BACKEND_SPEC.md)
+- [提供商兼容说明](/Volumes/acasis/Downloads/moviepilot-openclaw-forwarder-v2/docs/PROVIDER_GUIDE.md)
+
+## 当前定位
+
+当前仓库处于 `v2.0.0-alpha.1` 阶段，重点是先把：
+
+- 目录结构
+- 配置方式
+- 双后端路线
+- DockerHub 分发思路
+
+这些基础能力收稳。
+
+后续重点会放在：
+
+- 把 `direct_llm` 路径做成真正可跑的默认实现
+- 优先验证千问兼容接口
+- 再逐步补 OpenAI / OpenRouter 等兼容提供商
