@@ -108,6 +108,12 @@ Gateway 不直接调用大模型，而是把识别请求转发给用户自己提
 bash scripts/pre-release-check.sh
 ```
 
+如果要准备 DockerHub alpha 镜像，也可以直接执行：
+
+```bash
+bash scripts/dockerhub-alpha-release.sh
+```
+
 ## 推荐镜像名
 
 ```text

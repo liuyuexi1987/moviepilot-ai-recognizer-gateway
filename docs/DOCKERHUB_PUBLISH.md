@@ -36,6 +36,12 @@
 docker build -t liuyuexi1987/moviepilot-ai-recognizer-gateway:2.0.0-alpha.1 .
 ```
 
+或者直接使用脚本：
+
+```bash
+bash scripts/dockerhub-alpha-release.sh
+```
+
 ## 本地验证
 
 ```bash
@@ -55,6 +61,26 @@ curl -s http://127.0.0.1:19090/healthz
 
 ```bash
 docker push liuyuexi1987/moviepilot-ai-recognizer-gateway:2.0.0-alpha.1
+```
+
+或者使用脚本直接构建并推送：
+
+```bash
+bash scripts/dockerhub-alpha-release.sh --push
+```
+
+## 发布前建议检查
+
+先确认你已经登录 DockerHub：
+
+```bash
+docker login
+```
+
+再执行：
+
+```bash
+bash scripts/pre-release-check.sh
 ```
 
 ## 首发阶段建议
