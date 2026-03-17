@@ -100,6 +100,36 @@ Gateway 不直接调用大模型，而是把识别请求转发给用户自己提
 3. 启动容器
 4. 在 MoviePilot 插件里填写 Gateway 地址
 
+## Docker Compose 快速启动
+
+仓库已提供 compose 示例文件：
+
+- [docker-compose.example.yml](/Volumes/acasis/Downloads/moviepilot-openclaw-forwarder-v2/gateway-image-repo/docker-compose.example.yml)
+
+推荐步骤：
+
+1. 复制 `.env.example` 为 `.env`
+2. 按实际情况填写 `LLM_API_KEY`、`TMDB_API_KEY`、`MP_BASE_URL`、`MP_API_KEY`
+3. 使用示例 compose 启动
+
+示例命令：
+
+```bash
+cp .env.example .env
+docker compose -f docker-compose.example.yml up -d
+```
+
+默认示例适用于：
+
+- MoviePilot 与 Gateway 同机
+- 两者都加入 `moviepilot` Docker 网络
+
+启动后，插件中的 Webhook 地址一般填写：
+
+```text
+http://moviepilot-ai-recognizer-gateway:9000/webhook
+```
+
 ## 发布前检查
 
 发布前建议执行：
@@ -136,6 +166,7 @@ liuyuexi/moviepilot-ai-recognizer-gateway
 
 ## 文档入口
 
+- [Docker Compose 示例](/Volumes/acasis/Downloads/moviepilot-openclaw-forwarder-v2/gateway-image-repo/docker-compose.example.yml)
 - [DockerHub 发布说明](/Volumes/acasis/Downloads/moviepilot-openclaw-forwarder-v2/gateway-image-repo/docs/DOCKERHUB_PUBLISH.md)
 - [v2.0.0-alpha.1 发布文案](/Volumes/acasis/Downloads/moviepilot-openclaw-forwarder-v2/gateway-image-repo/docs/RELEASE_v2.0.0-alpha.1.md)
 - [Release 检查清单](/Volumes/acasis/Downloads/moviepilot-openclaw-forwarder-v2/gateway-image-repo/docs/RELEASE_CHECKLIST.md)
