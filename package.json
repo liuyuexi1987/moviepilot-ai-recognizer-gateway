@@ -1,0 +1,14 @@
+{
+  "name": "moviepilot-ai-recognizer-gateway",
+  "version": "2.0.0-alpha.1",
+  "description": "Dockerized gateway for MoviePilot AI recognition fallback",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
