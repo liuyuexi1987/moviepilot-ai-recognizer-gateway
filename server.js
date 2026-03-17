@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 
 const app = express();
@@ -12,8 +13,9 @@ const LLM_BASE_URL = (process.env.LLM_BASE_URL || "").replace(/\/$/, "");
 const LLM_API_KEY = process.env.LLM_API_KEY || "";
 const LLM_MODEL = process.env.LLM_MODEL || "";
 const TMDB_API_KEY = process.env.TMDB_API_KEY || "";
-const RECOGNIZER_TIMEOUT_MS = parseInt(process.env.RECOGNIZER_TIMEOUT_MS || "30000", 10);
+const RECOGNIZER_TIMEOUT_MS = parseInt(process.env.RECOGNIZER_TIMEOUT_MS || "60000", 10);
 const LLM_TEMPERATURE = Number.parseFloat(process.env.LLM_TEMPERATURE || "0.1");
+const LLM_ENABLE_THINKING = /^(1|true|yes|on)$/i.test(process.env.LLM_ENABLE_THINKING || "false");
 
 function normalizeTitle(t) {
   if (!t) return "";
@@ -212,6 +214,7 @@ async function callChatCompletion(messages) {
       body: JSON.stringify({
         model: LLM_MODEL,
         temperature: Number.isFinite(LLM_TEMPERATURE) ? LLM_TEMPERATURE : 0.1,
+        enable_thinking: LLM_ENABLE_THINKING,
         messages,
       }),
       signal: controller.signal,
@@ -222,6 +225,11 @@ async function callChatCompletion(messages) {
     }
     const data = await res.json();
     return data?.choices?.[0]?.message?.content || "";
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new Error(`direct llm timed out after ${RECOGNIZER_TIMEOUT_MS}ms`);
+    }
+    throw error;
   } finally {
     clearTimeout(timeout);
   }
@@ -334,6 +342,11 @@ async function externalRecognizer(payload) {
     }
     const data = await res.json();
     return normalizeResult(data);
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new Error(`external recognizer timed out after ${RECOGNIZER_TIMEOUT_MS}ms`);
+    }
+    throw error;
   } finally {
     clearTimeout(timeout);
   }
@@ -367,7 +380,10 @@ async function recognizeTitle({ title, path, recognize_mode }) {
     if (!result.episode) result.episode = se.episode;
   }
 
-  if (!result.tmdb_id && TMDB_API_KEY) {
+  if (TMDB_API_KEY) {
+    if (result.tmdb_id) {
+      console.log(`忽略模型返回的 tmdb_id=${result.tmdb_id}，改为走 TMDB 复核`);
+    }
     const queries = [];
     const seen = new Set();
     pushQuery(queries, seen, "model_name", searchHints.model_name || result.name);
@@ -392,6 +408,8 @@ async function recognizeTitle({ title, path, recognize_mode }) {
     } else {
       console.log(`TMDB 未命中 [mode=${recognize_mode}]`);
     }
+  } else {
+    result.tmdb_id = Number.parseInt(result.tmdb_id, 10) || 0;
   }
   return normalizeResult(result);
 }

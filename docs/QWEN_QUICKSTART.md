@@ -15,11 +15,20 @@ cp .env.qwen.example .env
 - `MP_API_KEY`
 - `LLM_API_KEY`
 - `TMDB_API_KEY`
+- `LLM_ENABLE_THINKING=false`
 
 如果你只是先测试 `/recognize`，暂时没有 MoviePilot，也可以先只填：
 
 - `LLM_API_KEY`
 - `TMDB_API_KEY`
+
+如果你使用的是百炼 Coding Plan / OpenClaw 当前使用的那类端点，也可以把：
+
+- `LLM_BASE_URL`
+
+改成实际可用的根路径，例如：
+
+- `https://coding.dashscope.aliyuncs.com/v1`
 
 ## 2. 启动网关
 
@@ -76,6 +85,7 @@ curl -s http://127.0.0.1:9000/recognize \
 2. `LLM_BASE_URL` 是否是兼容接口根路径，而不是完整 `/chat/completions`
 3. `LLM_MODEL` 是否存在
 4. `TMDB_API_KEY` 是否可用
-5. 网关日志里是否出现：
+5. `LLM_ENABLE_THINKING` 是否关闭，结构化 JSON 识别建议使用 `false`
+6. 网关日志里是否出现：
    - `direct llm returned ...`
    - `TMDB 未命中 ...`
