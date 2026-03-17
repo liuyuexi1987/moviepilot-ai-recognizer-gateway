@@ -2,7 +2,18 @@
 
 这个文档用于快速验证 `direct_llm` 路径是否可用。
 
-## 1. 准备环境变量
+## 1. 准备配置
+
+最简单的做法，是**直接编辑 `docker-compose.example.yml` 里的 `environment:`**。
+
+至少把这几个值改成你自己的：
+
+- `MP_API_KEY`
+- `LLM_API_KEY`
+- `TMDB_API_KEY`
+- `LLM_ENABLE_THINKING=false`
+
+如果你更喜欢把配置单独放到 `.env` 文件，再用模板方式也可以：
 
 复制示例文件：
 

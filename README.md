@@ -96,7 +96,7 @@ Gateway 不直接调用大模型，而是把识别请求转发给用户自己提
 目标体验应该是：
 
 1. `docker pull` 镜像
-2. 准备 `.env`
+2. 直接修改 compose 里的环境变量
 3. 启动容器
 4. 在 MoviePilot 插件里填写 Gateway 地址
 
@@ -108,16 +108,21 @@ Gateway 不直接调用大模型，而是把识别请求转发给用户自己提
 
 推荐步骤：
 
-1. 复制 `.env.example` 为 `.env`
-2. 按实际情况填写 `LLM_API_KEY`、`TMDB_API_KEY`、`MP_BASE_URL`、`MP_API_KEY`
-3. 使用示例 compose 启动
+1. 打开 `docker-compose.example.yml`
+2. 直接修改其中的 `environment` 配置
+3. 至少填好 `MP_API_KEY`、`LLM_API_KEY`、`TMDB_API_KEY`
+4. 使用示例 compose 启动
 
 示例命令：
 
 ```bash
-cp .env.example .env
 docker compose -f docker-compose.example.yml up -d
 ```
+
+如果你更喜欢把敏感信息单独放到 `.env` 文件里，也可以继续参考：
+
+- [`.env.example`](./.env.example)
+- [`.env.qwen.example`](./.env.qwen.example)
 
 默认示例适用于：
 

@@ -2,8 +2,19 @@ services:
   moviepilot-ai-recognizer-gateway:
     image: liuyuexi/moviepilot-ai-recognizer-gateway:2.0.0-alpha.1
     container_name: moviepilot-ai-recognizer-gateway
-    env_file:
-      - .env
+    environment:
+      PORT: "9000"
+      MP_BASE_URL: "http://moviepilot-v2:3001"
+      MP_API_KEY: "replace_with_moviepilot_api_key"
+      RECOGNIZER_MODE: "direct_llm"
+      LLM_BASE_URL: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+      LLM_API_KEY: "replace_with_llm_api_key"
+      LLM_MODEL: "qwen-plus"
+      LLM_TEMPERATURE: "0.1"
+      LLM_ENABLE_THINKING: "false"
+      TMDB_API_KEY: "replace_with_tmdb_api_key"
+      OPENCLAW_RECOGNIZE_URL: "http://openclaw-recognizer:19000/recognize"
+      RECOGNIZER_TIMEOUT_MS: "60000"
     ports:
       - "9000:9000"
     restart: unless-stopped
