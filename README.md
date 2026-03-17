@@ -98,6 +98,7 @@ liuyuexi1987/moviepilot-ai-recognizer-gateway
 ## 文档入口
 
 - [DockerHub 发布说明](/Volumes/acasis/Downloads/moviepilot-openclaw-forwarder-v2/gateway-image-repo/docs/DOCKERHUB_PUBLISH.md)
+- [v2.0.0-alpha.1 发布文案](/Volumes/acasis/Downloads/moviepilot-openclaw-forwarder-v2/gateway-image-repo/docs/RELEASE_v2.0.0-alpha.1.md)
 - [Release 检查清单](/Volumes/acasis/Downloads/moviepilot-openclaw-forwarder-v2/gateway-image-repo/docs/RELEASE_CHECKLIST.md)
 - [千问快速测试](/Volumes/acasis/Downloads/moviepilot-openclaw-forwarder-v2/gateway-image-repo/docs/QWEN_QUICKSTART.md)
 - [LLM 后端规范](/Volumes/acasis/Downloads/moviepilot-openclaw-forwarder-v2/docs/LLM_BACKEND_SPEC.md)
