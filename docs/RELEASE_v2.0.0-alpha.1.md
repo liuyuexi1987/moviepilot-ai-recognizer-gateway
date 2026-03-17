@@ -2,17 +2,44 @@
 
 ## GitHub Release
 
-### Tag
+### Tag version
 
 ```text
 v2.0.0-alpha.1
 ```
 
-### Title
+### Release title
 
 ```text
 v2.0.0-alpha.1 首个可运行版本（direct_llm 主路径）
 ```
+
+### 是否勾选 Pre-release
+
+建议：
+
+- 勾选
+
+因为当前版本仍属于 `alpha` 阶段。
+
+### 是否设置为 latest release
+
+建议：
+
+- GitHub Release 可以正常发布
+- 但 DockerHub 暂时不要推 `latest`
+
+### 是否上传附件
+
+建议：
+
+- 不强制上传二进制附件
+
+原因：
+
+- 网关仓库的核心交付物是 Docker 镜像
+- GitHub Release 主要承担版本说明作用
+- 真正安装时更推荐拉 DockerHub 镜像
 
 ### Release Notes
 
@@ -106,3 +133,4 @@ docker push liuyuexi1987/moviepilot-ai-recognizer-gateway:2.0.0-alpha.1
   - `latest`
 - GitHub Release 标题和 DockerHub tag 保持一致
 - 发版前至少再做一次容器级 `/recognize` 验证
+- Release 页面建议直接引用这份文案，不需要再单独维护另一套说明
