@@ -10,12 +10,17 @@
 cp .env.qwen.example .env
 ```
 
-然后填写：
+然后至少填写：
 
 - `MP_API_KEY`
 - `LLM_API_KEY`
 - `TMDB_API_KEY`
 - `LLM_ENABLE_THINKING=false`
+
+其中最重要的是：
+
+- `LLM_API_KEY`
+- `TMDB_API_KEY`
 
 如果你只是先测试 `/recognize`，暂时没有 MoviePilot，也可以先只填：
 
@@ -29,6 +34,14 @@ cp .env.qwen.example .env
 改成实际可用的根路径，例如：
 
 - `https://coding.dashscope.aliyuncs.com/v1`
+
+如果你不确定怎么填，推荐先保持这些默认值不动：
+
+- `RECOGNIZER_MODE=direct_llm`
+- `LLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1`
+- `LLM_MODEL=qwen-plus`
+- `LLM_TEMPERATURE=0.1`
+- `LLM_ENABLE_THINKING=false`
 
 ## 2. 启动网关
 
@@ -90,3 +103,14 @@ curl -s http://127.0.0.1:9000/recognize \
 6. 网关日志里是否出现：
    - `direct llm returned ...`
    - `TMDB 未命中 ...`
+
+## 8. 最适合 NAS 用户的默认组合
+
+如果你只是想先尽快跑通，推荐直接用下面这组配置思路：
+
+- `RECOGNIZER_MODE=direct_llm`
+- `LLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1`
+- `LLM_MODEL=qwen-plus`
+- `LLM_ENABLE_THINKING=false`
+- `TMDB_API_KEY` 必填
+- MoviePilot 与 Gateway 同机部署，并加入同一 Docker 网络
