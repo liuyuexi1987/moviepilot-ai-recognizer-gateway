@@ -422,6 +422,41 @@ app.get("/healthz", (req, res) => {
   });
 });
 
+app.post("/recognize", async (req, res) => {
+  const { title, path } = req.body || {};
+  const recognizeMode = normalizeRecognizeMode(req.body?.recognize_mode);
+
+  if (!title) {
+    return res.status(400).json({
+      success: false,
+      message: "missing title",
+      result: emptyResult(),
+    });
+  }
+
+  try {
+    const result = await recognizeTitle({
+      title,
+      path: path || "",
+      recognize_mode: recognizeMode,
+    });
+    return res.json({
+      success: true,
+      mode: recognizeMode,
+      backend: RECOGNIZER_MODE,
+      result,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      mode: recognizeMode,
+      backend: RECOGNIZER_MODE,
+      message: error.message,
+      result: emptyResult(),
+    });
+  }
+});
+
 app.post("/webhook", async (req, res) => {
   const { request_id, title, path } = req.body || {};
   const recognizeMode = normalizeRecognizeMode(req.body?.recognize_mode);
