@@ -104,7 +104,7 @@ Gateway 不直接调用大模型，而是把识别请求转发给用户自己提
 
 仓库已提供 compose 示例文件：
 
-- [docker-compose.example.yml](/Volumes/acasis/Downloads/moviepilot-openclaw-forwarder-v2/gateway-image-repo/docker-compose.example.yml)
+- [docker-compose.example.yml](./docker-compose.example.yml)
 
 推荐步骤：
 
@@ -166,13 +166,13 @@ liuyuexi/moviepilot-ai-recognizer-gateway
 
 ## 文档入口
 
-- [Docker Compose 示例](/Volumes/acasis/Downloads/moviepilot-openclaw-forwarder-v2/gateway-image-repo/docker-compose.example.yml)
-- [DockerHub 发布说明](/Volumes/acasis/Downloads/moviepilot-openclaw-forwarder-v2/gateway-image-repo/docs/DOCKERHUB_PUBLISH.md)
-- [v2.0.0-alpha.1 发布文案](/Volumes/acasis/Downloads/moviepilot-openclaw-forwarder-v2/gateway-image-repo/docs/RELEASE_v2.0.0-alpha.1.md)
-- [Release 检查清单](/Volumes/acasis/Downloads/moviepilot-openclaw-forwarder-v2/gateway-image-repo/docs/RELEASE_CHECKLIST.md)
-- [千问快速测试](/Volumes/acasis/Downloads/moviepilot-openclaw-forwarder-v2/gateway-image-repo/docs/QWEN_QUICKSTART.md)
-- [LLM 后端规范](/Volumes/acasis/Downloads/moviepilot-openclaw-forwarder-v2/docs/LLM_BACKEND_SPEC.md)
-- [提供商兼容说明](/Volumes/acasis/Downloads/moviepilot-openclaw-forwarder-v2/docs/PROVIDER_GUIDE.md)
+- [Docker Compose 示例](./docker-compose.example.yml)
+- [DockerHub 发布说明](./docs/DOCKERHUB_PUBLISH.md)
+- [v2.0.0-alpha.1 发布文案](./docs/RELEASE_v2.0.0-alpha.1.md)
+- [Release 检查清单](./docs/RELEASE_CHECKLIST.md)
+- [千问快速测试](./docs/QWEN_QUICKSTART.md)
+- [LLM 后端规范](./docs/LLM_BACKEND_SPEC.md)
+- [提供商兼容说明](./docs/PROVIDER_GUIDE.md)
 
 ## 当前定位
 
