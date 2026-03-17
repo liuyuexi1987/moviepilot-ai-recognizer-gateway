@@ -111,6 +111,11 @@ function normalizeResult(data) {
   };
 }
 
+function extractTmdbCandidate(data) {
+  const result = typeof data === "object" && data ? data : {};
+  return Number.parseInt(result.tmdb_id, 10) || 0;
+}
+
 function emptyResult() {
   return { name: "", year: 0, tmdb_id: 0, type: "movie", season: 0, episode: 0 };
 }
@@ -286,6 +291,8 @@ async function directLlmRecognize(title, recognizeMode) {
     result = await directLlmJson(prompt2);
   }
 
+  const modelTmdbCandidate = extractTmdbCandidate(result);
+
   if (!result.name) {
     result.name = cleanTitle(title);
   }
@@ -314,6 +321,7 @@ async function directLlmRecognize(title, recognizeMode) {
 
   return {
     result: normalizeResult(result),
+    modelTmdbCandidate,
     searchHints: {
       model_name: nameForSearch,
       clean_title: cleanTitle(title),
@@ -341,7 +349,10 @@ async function externalRecognizer(payload) {
       throw new Error(`external recognizer returned ${res.status}`);
     }
     const data = await res.json();
-    return normalizeResult(data);
+    return {
+      result: normalizeResult(data),
+      modelTmdbCandidate: extractTmdbCandidate(data),
+    };
   } catch (error) {
     if (error?.name === "AbortError") {
       throw new Error(`external recognizer timed out after ${RECOGNIZER_TIMEOUT_MS}ms`);
@@ -359,12 +370,16 @@ async function recognizeTitle({ title, path, recognize_mode }) {
   }
 
   let result;
+  let tmdbCandidate = 0;
   let searchHints = {};
   if (RECOGNIZER_MODE === "external_recognizer") {
-    result = await externalRecognizer({ title, path, recognize_mode });
+    const external = await externalRecognizer({ title, path, recognize_mode });
+    result = external.result;
+    tmdbCandidate = external.modelTmdbCandidate;
   } else {
     const llm = await directLlmRecognize(title, recognize_mode);
     result = llm.result;
+    tmdbCandidate = llm.modelTmdbCandidate;
     searchHints = llm.searchHints || {};
   }
 
@@ -381,8 +396,8 @@ async function recognizeTitle({ title, path, recognize_mode }) {
   }
 
   if (TMDB_API_KEY) {
-    if (result.tmdb_id) {
-      console.log(`忽略模型返回的 tmdb_id=${result.tmdb_id}，改为走 TMDB 复核`);
+    if (tmdbCandidate) {
+      console.log(`收到模型候选 tmdb_id=${tmdbCandidate}，最终结果仍以 TMDB 复核为准`);
     }
     const queries = [];
     const seen = new Set();
@@ -409,7 +424,7 @@ async function recognizeTitle({ title, path, recognize_mode }) {
       console.log(`TMDB 未命中 [mode=${recognize_mode}]`);
     }
   } else {
-    result.tmdb_id = Number.parseInt(result.tmdb_id, 10) || 0;
+    result.tmdb_id = tmdbCandidate || 0;
   }
   return normalizeResult(result);
 }

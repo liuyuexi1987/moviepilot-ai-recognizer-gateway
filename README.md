@@ -34,6 +34,7 @@ Gateway 会：
   - `direct_llm`
   - `external_recognizer`
 - 可选 TMDB 校验 / 补全
+- 配置 `TMDB_API_KEY` 时，最终返回的 `tmdb_id` 以 TMDB 复核结果为准，不直接信任模型输出的编号
 - 自动回调 MoviePilot 插件 API
 
 ## 后端模式

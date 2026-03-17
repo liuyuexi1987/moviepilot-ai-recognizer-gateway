@@ -78,6 +78,7 @@ curl -s http://127.0.0.1:9000/recognize \
 - `result.name` 有值
 - `result.type` 为 `movie` 或 `tv`
 - 如果 TMDB 匹配成功，`result.tmdb_id` 为非 0
+- 如果配置了 `TMDB_API_KEY`，最终 `result.tmdb_id` 应以网关日志里的 TMDB 复核结果为准，而不是模型原始输出
 
 ## 7. 如果识别失败，优先检查
 
