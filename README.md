@@ -100,6 +100,14 @@ Gateway 不直接调用大模型，而是把识别请求转发给用户自己提
 3. 启动容器
 4. 在 MoviePilot 插件里填写 Gateway 地址
 
+## 发布前检查
+
+发布前建议执行：
+
+```bash
+bash scripts/pre-release-check.sh
+```
+
 ## 推荐镜像名
 
 ```text
