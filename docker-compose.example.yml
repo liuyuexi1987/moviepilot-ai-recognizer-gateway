@@ -4,6 +4,10 @@ services:
     container_name: moviepilot-ai-recognizer-gateway
     environment:
       PORT: "9000"
+      # 推荐写法：MoviePilot 与 Gateway 在同一 Docker 网络中时，直接填 MoviePilot 容器名
+      # 例如：http://moviepilot-v2:3001
+      # 备用写法：如果不在同一 Docker 网络，可改成宿主机内网地址，例如：http://192.168.1.10:3001
+      # 不推荐：不要写成 http://127.0.0.1:3001 ，容器内的 127.0.0.1 指向当前容器自己
       MP_BASE_URL: "http://moviepilot-v2:3001"
       MP_API_KEY: "replace_with_moviepilot_api_key"
       RECOGNIZER_MODE: "direct_llm"
