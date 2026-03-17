@@ -116,13 +116,13 @@ v2.0.0-alpha.1 首个可运行版本（direct_llm 主路径）
 ### 构建
 
 ```bash
-docker build -t liuyuexi1987/moviepilot-ai-recognizer-gateway:2.0.0-alpha.1 .
+docker build -t liuyuexi/moviepilot-ai-recognizer-gateway:2.0.0-alpha.1 .
 ```
 
 ### 推送
 
 ```bash
-docker push liuyuexi1987/moviepilot-ai-recognizer-gateway:2.0.0-alpha.1
+docker push liuyuexi/moviepilot-ai-recognizer-gateway:2.0.0-alpha.1
 ```
 
 ## 首发建议

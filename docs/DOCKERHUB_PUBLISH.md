@@ -5,7 +5,7 @@
 - GitHub：
   - `moviepilot-ai-recognizer-gateway`
 - DockerHub：
-  - `liuyuexi1987/moviepilot-ai-recognizer-gateway`
+  - `liuyuexi/moviepilot-ai-recognizer-gateway`
 
 ## 推荐标签策略
 
@@ -33,7 +33,7 @@
 ## 手工构建
 
 ```bash
-docker build -t liuyuexi1987/moviepilot-ai-recognizer-gateway:2.0.0-alpha.1 .
+docker build -t liuyuexi/moviepilot-ai-recognizer-gateway:2.0.0-alpha.1 .
 ```
 
 或者直接使用脚本：
@@ -48,7 +48,7 @@ bash scripts/dockerhub-alpha-release.sh
 docker run --rm \
   --env-file .env \
   -p 19090:9000 \
-  liuyuexi1987/moviepilot-ai-recognizer-gateway:2.0.0-alpha.1
+  liuyuexi/moviepilot-ai-recognizer-gateway:2.0.0-alpha.1
 ```
 
 另开一个终端验证：
@@ -60,7 +60,7 @@ curl -s http://127.0.0.1:19090/healthz
 ## 推送镜像
 
 ```bash
-docker push liuyuexi1987/moviepilot-ai-recognizer-gateway:2.0.0-alpha.1
+docker push liuyuexi/moviepilot-ai-recognizer-gateway:2.0.0-alpha.1
 ```
 
 或者使用脚本直接构建并推送：

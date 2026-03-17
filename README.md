@@ -117,7 +117,7 @@ bash scripts/dockerhub-alpha-release.sh
 ## 推荐镜像名
 
 ```text
-liuyuexi1987/moviepilot-ai-recognizer-gateway
+liuyuexi/moviepilot-ai-recognizer-gateway
 ```
 
 ## 推荐仓库信息

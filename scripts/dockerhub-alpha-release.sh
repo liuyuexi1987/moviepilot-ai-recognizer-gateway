@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
-IMAGE_REPO="${IMAGE_REPO:-liuyuexi1987/moviepilot-ai-recognizer-gateway}"
+IMAGE_REPO="${IMAGE_REPO:-liuyuexi/moviepilot-ai-recognizer-gateway}"
 IMAGE_TAG="${IMAGE_TAG:-2.0.0-alpha.1}"
 FULL_IMAGE="${IMAGE_REPO}:${IMAGE_TAG}"
 PUSH_IMAGE="false"

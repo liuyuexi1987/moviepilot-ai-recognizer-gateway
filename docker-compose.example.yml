@@ -1,6 +1,6 @@
 services:
   moviepilot-ai-recognizer-gateway:
-    image: liuyuexi1987/moviepilot-ai-recognizer-gateway:2.0.0-alpha.1
+    image: liuyuexi/moviepilot-ai-recognizer-gateway:2.0.0-alpha.1
     container_name: moviepilot-ai-recognizer-gateway
     env_file:
       - .env
