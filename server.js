@@ -13,6 +13,7 @@ const LLM_API_KEY = process.env.LLM_API_KEY || "";
 const LLM_MODEL = process.env.LLM_MODEL || "";
 const TMDB_API_KEY = process.env.TMDB_API_KEY || "";
 const RECOGNIZER_TIMEOUT_MS = parseInt(process.env.RECOGNIZER_TIMEOUT_MS || "30000", 10);
+const LLM_TEMPERATURE = Number.parseFloat(process.env.LLM_TEMPERATURE || "0.1");
 
 function normalizeTitle(t) {
   if (!t) return "";
@@ -26,6 +27,22 @@ function cleanTitle(t) {
   s = s.replace(/\b(19|20)\d{2}\b/g, " ");
   s = s.replace(/\bS\d{1,2}E\d{1,3}\b/gi, " ");
   s = s.replace(/\bSeason\s*\d+\b/gi, " ");
+  s = s.replace(/\s+/g, " ").trim();
+  return s;
+}
+
+function extractCoreTitle(t) {
+  if (!t) return "";
+  let s = t.replace(/\.[^.]+$/, "");
+  s = s.replace(/\[[^\]]+\]/g, " ");
+  s = s.replace(/\((19|20)\d{2}\)/g, " ");
+  s = s.replace(/\bS\d{1,2}E\d{1,3}\b/gi, " ");
+  s = s.replace(/\bS\d{1,2}\b/gi, " ");
+  s = s.replace(/\bSeason\s*\d+\b/gi, " ");
+  s = s.replace(/\b(19|20)\d{2}\b/g, " ");
+  s = s.replace(/\b(2160p|1080p|720p|480p|4k|web-dl|webrip|bluray|blu-ray|bdrip|remux|hdrip|hdtv|dvdrip|uhd|hdr10|hdr|dv|nf|dsnp|amzn|web|x264|x265|h\.264|h\.265|hevc|avc|aac|ddp|dts|truehd|atmos|10bit|8bit|multi|audio|audios)\b/gi, " ");
+  s = s.replace(/-[A-Za-z0-9._-]+$/g, " ");
+  s = s.replace(/[._]+/g, " ");
   s = s.replace(/\s+/g, " ").trim();
   return s;
 }
@@ -63,6 +80,19 @@ function extractTopLevelJson(text) {
   return null;
 }
 
+function extractJsonFromText(text) {
+  if (!text) return null;
+  const code = text.match(/```json\s*([\s\S]*?)```/i);
+  if (code) {
+    try { return JSON.parse(code[1]); } catch {}
+  }
+  const genericCode = text.match(/```\s*([\s\S]*?)```/i);
+  if (genericCode) {
+    try { return JSON.parse(genericCode[1]); } catch {}
+  }
+  return extractTopLevelJson(text);
+}
+
 function normalizeRecognizeMode(mode) {
   return mode === "enhanced" ? "enhanced" : "standard";
 }
@@ -83,6 +113,15 @@ function emptyResult() {
   return { name: "", year: 0, tmdb_id: 0, type: "movie", season: 0, episode: 0 };
 }
 
+function pushQuery(list, seen, label, value) {
+  const q = String(value || "").trim();
+  if (!q) return;
+  const key = normalizeTitle(q);
+  if (!key || seen.has(key)) return;
+  seen.add(key);
+  list.push({ label, value: q });
+}
+
 function isSportsOrNewsTitle(t) {
   if (!t) return false;
   const s = t.toLowerCase();
@@ -96,6 +135,16 @@ function extractYearFromTitle(t) {
   if (!t) return 0;
   const m = t.match(/\b(19|20)\d{2}\b/);
   return m ? parseInt(m[0], 10) : 0;
+}
+
+function extractSeasonEpisodeFromTitle(t) {
+  if (!t) return { season: 0, episode: 0 };
+  const m = t.match(/\bS(\d{1,2})E(\d{1,3})\b/i);
+  if (!m) return { season: 0, episode: 0 };
+  return {
+    season: parseInt(m[1], 10) || 0,
+    episode: parseInt(m[2], 10) || 0,
+  };
 }
 
 function titleMatch(target, candidate) {
@@ -146,25 +195,10 @@ async function tmdbSearch(name, year, type) {
   return 0;
 }
 
-async function directLlmRecognize(title, recognizeMode) {
+async function callChatCompletion(messages) {
   if (!LLM_BASE_URL || !LLM_API_KEY || !LLM_MODEL) {
     throw new Error("LLM_BASE_URL / LLM_API_KEY / LLM_MODEL is not fully configured");
   }
-
-  const extra = recognizeMode === "enhanced"
-    ? "标题可能存在拼音、漏词、缩写或网盘规避命名，请优先猜测最可能的标准影视标题。"
-    : "标题通常接近标准影视命名，请优先保证准确率。";
-
-  const prompt = [
-    "你是媒体识别助手。",
-    extra,
-    "必须输出唯一一行 JSON，不得包含任何解释或额外文字。",
-    "字段必须齐全：name, year, tmdb_id, type, season, episode。",
-    "tmdb_id 如果无法可靠确定必须输出 0。",
-    "type 只能是 movie 或 tv。",
-    "如果无法判断 season 或 episode，则输出 0。",
-    `标题：${title}`,
-  ].join("\n");
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), RECOGNIZER_TIMEOUT_MS);
@@ -177,11 +211,8 @@ async function directLlmRecognize(title, recognizeMode) {
       },
       body: JSON.stringify({
         model: LLM_MODEL,
-        temperature: 0.1,
-        messages: [
-          { role: "system", content: "你是一个严格输出 JSON 的媒体识别助手。" },
-          { role: "user", content: prompt },
-        ],
+        temperature: Number.isFinite(LLM_TEMPERATURE) ? LLM_TEMPERATURE : 0.1,
+        messages,
       }),
       signal: controller.signal,
     });
@@ -190,12 +221,98 @@ async function directLlmRecognize(title, recognizeMode) {
       throw new Error(`direct llm returned ${res.status}`);
     }
     const data = await res.json();
-    const content = data?.choices?.[0]?.message?.content || "";
-    const parsed = extractTopLevelJson(content);
-    return normalizeResult(parsed || {});
+    return data?.choices?.[0]?.message?.content || "";
   } finally {
     clearTimeout(timeout);
   }
+}
+
+async function directLlmJson(prompt) {
+  const content = await callChatCompletion([
+    { role: "system", content: "你是一个严格输出 JSON 的媒体识别助手。" },
+    { role: "user", content: prompt },
+  ]);
+  return normalizeResult(extractJsonFromText(content) || {});
+}
+
+async function directLlmText(prompt) {
+  const content = await callChatCompletion([
+    { role: "system", content: "你是一个媒体名称标准化助手，只输出最终答案，不输出解释。" },
+    { role: "user", content: prompt },
+  ]);
+  return String(content || "").replace(/```[\s\S]*?```/g, "").trim();
+}
+
+async function directLlmRecognize(title, recognizeMode) {
+  const baseName = normalizeTitle(title);
+  const extra = recognizeMode === "enhanced"
+    ? "标题可能存在拼音、漏词、缩写或网盘规避命名，请优先猜测最可能的标准影视标题。"
+    : "标题通常接近标准影视命名，请优先保证准确率。";
+
+  const prompt1 = [
+    "你是媒体识别助手。",
+    extra,
+    "必须输出唯一一行 JSON，不得包含任何解释或额外文字。",
+    "字段必须齐全：name, year, tmdb_id, type, season, episode。",
+    "tmdb_id 如果无法可靠确定必须输出 0。",
+    "type 只能是 movie 或 tv。",
+    "name 尽量输出标准片名；如果无法判断可留空字符串。",
+    "如果无法判断 season 或 episode，则输出 0。",
+    `标题：${title}`,
+  ].join("\n");
+
+  const prompt2 = [
+    "你是媒体识别助手。",
+    extra,
+    "必须输出唯一一行 JSON，不得包含任何解释或额外文字。",
+    "字段必须齐全：name, year, tmdb_id, type, season, episode。",
+    "不允许直接回显原始标题。",
+    "如果无法可靠识别，name 允许为空字符串。",
+    "tmdb_id 如果无法可靠确定必须输出 0。",
+    "type 只能是 movie 或 tv。",
+    `标题：${title}`,
+  ].join("\n");
+
+  let result = await directLlmJson(prompt1);
+  if (!result.name || normalizeTitle(result.name) === baseName) {
+    result = await directLlmJson(prompt2);
+  }
+
+  if (!result.name) {
+    result.name = cleanTitle(title);
+  }
+  if (!result.year) {
+    result.year = extractYearFromTitle(title);
+  }
+  if (!result.season || !result.episode) {
+    const se = extractSeasonEpisodeFromTitle(title);
+    if (!result.season) result.season = se.season;
+    if (!result.episode) result.episode = se.episode;
+  }
+
+  let nameForSearch = result.name || "";
+  if (hasCjk(nameForSearch)) {
+    const promptEn = [
+      "只输出最可能对应的标准英文片名或英文剧名，不要解释，不要 JSON。",
+      "如果无法判断，输出空字符串。",
+      `标题：${title}`,
+    ].join("\n");
+    const enName = await directLlmText(promptEn);
+    if (enName && !hasCjk(enName)) {
+      nameForSearch = enName;
+      result.name = enName;
+    }
+  }
+
+  return {
+    result: normalizeResult(result),
+    searchHints: {
+      model_name: nameForSearch,
+      clean_title: cleanTitle(title),
+      core_title: extractCoreTitle(title),
+      raw_title: title.replace(/\.[^.]+$/, "").trim(),
+    },
+  };
 }
 
 async function externalRecognizer(payload) {
@@ -228,9 +345,15 @@ async function recognizeTitle({ title, path, recognize_mode }) {
     return { name: "", year: extractYearFromTitle(title), tmdb_id: 0, type: "tv", season: 0, episode: 0 };
   }
 
-  let result = RECOGNIZER_MODE === "external_recognizer"
-    ? await externalRecognizer({ title, path, recognize_mode })
-    : await directLlmRecognize(title, recognize_mode);
+  let result;
+  let searchHints = {};
+  if (RECOGNIZER_MODE === "external_recognizer") {
+    result = await externalRecognizer({ title, path, recognize_mode });
+  } else {
+    const llm = await directLlmRecognize(title, recognize_mode);
+    result = llm.result;
+    searchHints = llm.searchHints || {};
+  }
 
   if (!result.name) {
     result.name = cleanTitle(title);
@@ -238,8 +361,37 @@ async function recognizeTitle({ title, path, recognize_mode }) {
   if (!result.year) {
     result.year = extractYearFromTitle(title);
   }
-  if (!result.tmdb_id && TMDB_API_KEY && result.name) {
-    result.tmdb_id = await tmdbSearch(result.name, result.year, result.type);
+  if (!result.season || !result.episode) {
+    const se = extractSeasonEpisodeFromTitle(title);
+    if (!result.season) result.season = se.season;
+    if (!result.episode) result.episode = se.episode;
+  }
+
+  if (!result.tmdb_id && TMDB_API_KEY) {
+    const queries = [];
+    const seen = new Set();
+    pushQuery(queries, seen, "model_name", searchHints.model_name || result.name);
+    pushQuery(queries, seen, "clean_title", searchHints.clean_title || cleanTitle(title));
+    if (recognize_mode === "enhanced") {
+      pushQuery(queries, seen, "core_title", searchHints.core_title || extractCoreTitle(title));
+      pushQuery(queries, seen, "raw_title", searchHints.raw_title || title.replace(/\.[^.]+$/, "").trim());
+    }
+
+    let tmdbId = 0;
+    let matchedRoute = "";
+    for (const q of queries) {
+      tmdbId = await tmdbSearch(q.value, result.year, result.type);
+      if (tmdbId) {
+        matchedRoute = q.label;
+        break;
+      }
+    }
+    result.tmdb_id = tmdbId || 0;
+    if (tmdbId) {
+      console.log(`TMDB 命中 [mode=${recognize_mode}, route=${matchedRoute}] -> ${tmdbId}`);
+    } else {
+      console.log(`TMDB 未命中 [mode=${recognize_mode}]`);
+    }
   }
   return normalizeResult(result);
 }
