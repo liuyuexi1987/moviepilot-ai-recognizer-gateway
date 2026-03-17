@@ -119,6 +119,8 @@ bash scripts/dockerhub-alpha-release.sh
 - `linux/amd64`
 - `linux/arm64`
 
+执行 `--push` 时，脚本会自动准备可用的 buildx 多架构 builder。
+
 ## 推荐镜像名
 
 ```text

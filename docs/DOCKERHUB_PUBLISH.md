@@ -48,6 +48,7 @@ bash scripts/dockerhub-alpha-release.sh
 
 - 脚本默认按 `linux/amd64,linux/arm64` 构建
 - 不带 `--push` 时只做本地构建
+- 带 `--push` 时会自动创建并使用 `docker-container` 类型的 buildx builder（如本机尚未配置）
 
 ## 本地验证
 
