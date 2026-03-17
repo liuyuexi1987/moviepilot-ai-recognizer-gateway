@@ -32,6 +32,8 @@
 
 ## 手工构建
 
+如果只验证当前本机架构：
+
 ```bash
 docker build -t liuyuexi/moviepilot-ai-recognizer-gateway:2.0.0-alpha.1 .
 ```
@@ -41,6 +43,11 @@ docker build -t liuyuexi/moviepilot-ai-recognizer-gateway:2.0.0-alpha.1 .
 ```bash
 bash scripts/dockerhub-alpha-release.sh
 ```
+
+说明：
+
+- 脚本默认按 `linux/amd64,linux/arm64` 构建
+- 不带 `--push` 时只做本地构建
 
 ## 本地验证
 
@@ -63,11 +70,16 @@ curl -s http://127.0.0.1:19090/healthz
 docker push liuyuexi/moviepilot-ai-recognizer-gateway:2.0.0-alpha.1
 ```
 
-或者使用脚本直接构建并推送：
+或者使用脚本直接构建并推送多架构镜像：
 
 ```bash
 bash scripts/dockerhub-alpha-release.sh --push
 ```
+
+推送完成后，同一个 tag 将同时支持：
+
+- `linux/amd64`
+- `linux/arm64`
 
 ## 发布前建议检查
 

@@ -114,6 +114,11 @@ bash scripts/pre-release-check.sh
 bash scripts/dockerhub-alpha-release.sh
 ```
 
+当前脚本默认按多架构构建：
+
+- `linux/amd64`
+- `linux/arm64`
+
 ## 推荐镜像名
 
 ```text
