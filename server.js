@@ -19,7 +19,12 @@ const LLM_ENABLE_THINKING = /^(1|true|yes|on)$/i.test(process.env.LLM_ENABLE_THI
 
 function normalizeTitle(t) {
   if (!t) return "";
-  return t.replace(/\.[^.]+$/, "").replace(/[\s._-]+/g, "").toLowerCase();
+  return t
+    .replace(/\.[^.]+$/, "")
+    .replace(/[“”"'`´]+/g, "")
+    .replace(/[：:·,，!?！？、（）()\[\]{}]+/g, "")
+    .replace(/[\s._-]+/g, "")
+    .toLowerCase();
 }
 
 function cleanTitle(t) {
@@ -29,6 +34,14 @@ function cleanTitle(t) {
   s = s.replace(/\b(19|20)\d{2}\b/g, " ");
   s = s.replace(/\bS\d{1,2}E\d{1,3}\b/gi, " ");
   s = s.replace(/\bSeason\s*\d+\b/gi, " ");
+  s = s.replace(/\s+/g, " ").trim();
+  return s;
+}
+
+function sanitizeModelTitle(t) {
+  if (!t) return "";
+  let s = String(t).trim();
+  s = s.replace(/^["'`“”]+|["'`“”]+$/g, "");
   s = s.replace(/\s+/g, " ").trim();
   return s;
 }
@@ -164,16 +177,25 @@ function titleMatch(target, candidate) {
 
 async function tmdbSearchOnce(name, year, type, lang) {
   if (!name || !TMDB_API_KEY) return 0;
-  const q = encodeURIComponent(name);
+  const sanitizedName = sanitizeModelTitle(name);
+  if (!sanitizedName) return 0;
   const isTv = type === "tv";
   const url = isTv
-    ? `https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${q}&first_air_date_year=${year || ""}&language=${lang}`
-    : `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${q}&year=${year || ""}&language=${lang}`;
+    ? `https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(sanitizedName)}&first_air_date_year=${year || ""}&language=${lang}`
+    : `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(sanitizedName)}&year=${year || ""}&language=${lang}`;
 
   try {
     const res = await fetch(url);
+    if (!res.ok) {
+      const text = await res.text();
+      console.log(`TMDB 请求失败 [lang=${lang}, type=${type}, year=${year || 0}, query=${sanitizedName}] -> ${res.status} ${text.slice(0, 200)}`);
+      return 0;
+    }
     const data = await res.json();
     const results = data?.results || [];
+    if (!results.length) {
+      console.log(`TMDB 空结果 [lang=${lang}, type=${type}, year=${year || 0}, query=${sanitizedName}]`);
+    }
     for (const r of results) {
       const t1 = isTv ? r.name : r.title;
       const t2 = isTv ? r.original_name : r.original_title;
@@ -182,10 +204,16 @@ async function tmdbSearchOnce(name, year, type, lang) {
         const ry = d ? parseInt(String(d).slice(0, 4), 10) || 0 : 0;
         if (!ry || ry !== year) continue;
       }
-      if (t1 && titleMatch(name, t1)) return r.id || 0;
-      if (t2 && titleMatch(name, t2)) return r.id || 0;
+      if (t1 && titleMatch(sanitizedName, t1)) return r.id || 0;
+      if (t2 && titleMatch(sanitizedName, t2)) return r.id || 0;
     }
-  } catch {}
+    const sampleTitles = results.slice(0, 3).map((r) => (isTv ? (r.name || r.original_name) : (r.title || r.original_title))).filter(Boolean);
+    if (sampleTitles.length) {
+      console.log(`TMDB 有结果但未匹配 [lang=${lang}, type=${type}, year=${year || 0}, query=${sanitizedName}] -> ${sampleTitles.join(" | ")}`);
+    }
+  } catch (error) {
+    console.log(`TMDB 查询异常 [lang=${lang}, type=${type}, year=${year || 0}, query=${sanitizedName}] -> ${error.message}`);
+  }
   return 0;
 }
 
@@ -296,6 +324,7 @@ async function directLlmRecognize(title, recognizeMode) {
   if (!result.name) {
     result.name = cleanTitle(title);
   }
+  result.name = sanitizeModelTitle(result.name);
   if (!result.year) {
     result.year = extractYearFromTitle(title);
   }
@@ -314,8 +343,8 @@ async function directLlmRecognize(title, recognizeMode) {
     ].join("\n");
     const enName = await directLlmText(promptEn);
     if (enName && !hasCjk(enName)) {
-      nameForSearch = enName;
-      result.name = enName;
+      nameForSearch = sanitizeModelTitle(enName);
+      result.name = sanitizeModelTitle(enName);
     }
   }
 
