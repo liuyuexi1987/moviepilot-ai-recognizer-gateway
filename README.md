@@ -17,10 +17,10 @@
 
 - `external_recognizer`
 
-当前 DockerHub 镜像：
+当前推荐 DockerHub 镜像：
 
 ```text
-liuyuexi/moviepilot-ai-recognizer-gateway:2.0.0-alpha.1
+liuyuexi/moviepilot-ai-recognizer-gateway:2.0.0-alpha.2
 ```
 
 支持架构：
@@ -30,17 +30,34 @@ liuyuexi/moviepilot-ai-recognizer-gateway:2.0.0-alpha.1
 
 ---
 
+## 和官方插件的区别
+
+MoviePilot 官方已有一类“直接填 OpenAI / 千问兼容接口”的插件，适合轻量用户直接做 AI 辅助识别。
+
+这个项目更适合下面这些情况：
+
+- 原生识别失败后，希望再走一条更完整的补救链路
+- 需要 TMDB 二次复核，而不是只信模型返回结果
+- 需要异步回调和二次整理
+- 需要保留 OpenClaw / 外部识别端兼容能力
+
+简单理解：
+
+- 官方插件更像“轻量 AI 辅助识别”
+- 这个项目更像“识别失败后的增强闭环”
+
 ## Docker 部署
 
 推荐方式：
 
 - MoviePilot 与 Gateway 同机部署
-- 同一 Docker 网络中互通
+- 小白用户优先使用宿主机内网地址
+- 熟悉 Docker 网络后，再考虑改成同一网络下的容器名互通
 
 两种常见写法：
 
 - 方案 A：同一 Docker 网络，直接写容器名
-- 方案 B：没有自定义网络名时，直接写宿主机内网地址
+- 方案 B：直接写宿主机内网地址
 
 ### 方案 1：direct_llm
 
@@ -54,17 +71,17 @@ liuyuexi/moviepilot-ai-recognizer-gateway:2.0.0-alpha.1
 ```yaml
 services:
   moviepilot-ai-recognizer-gateway:
-    image: liuyuexi/moviepilot-ai-recognizer-gateway:2.0.0-alpha.1
+    image: liuyuexi/moviepilot-ai-recognizer-gateway:2.0.0-alpha.2
     container_name: moviepilot-ai-recognizer-gateway
     environment:
       PORT: "9000"
-      MP_BASE_URL: "http://moviepilot-v2:3001" # 推荐优先用方案A；方案A=同网络容器名，方案B=宿主机内网地址；不要写 127.0.0.1
+      MP_BASE_URL: "http://192.168.x.x:3000" # 小白推荐直接写 MoviePilot 的宿主机内网地址和外部端口；熟悉 Docker 网络后也可改成 http://moviepilot-v2:3001；不要写 127.0.0.1
       MP_API_KEY: "replace_with_moviepilot_api_key" # 改成你的 MoviePilot API Key
       RECOGNIZER_MODE: "direct_llm"
       LLM_BASE_URL: "https://dashscope.aliyuncs.com/compatible-mode/v1" # 改成你的 OpenAI 兼容接口根路径
       LLM_API_KEY: "replace_with_llm_api_key" # 改成你的大模型 API Key
       LLM_MODEL: "qwen-plus" # 推荐先用 qwen-plus
-      LLM_TEMPERATURE: "0.1" # 结构化识别建议保持低温度
+      LLM_TEMPERATURE: "0.1" # 温度越低越保守，越容易稳定输出 JSON；不懂就保持 0.1
       LLM_ENABLE_THINKING: "false" # 推荐保持 false，稳定输出 JSON
       TMDB_API_KEY: "replace_with_tmdb_api_key" # 改成你的 TMDB API Key
       RECOGNIZER_TIMEOUT_MS: "60000"
@@ -98,14 +115,14 @@ docker compose -f docker-compose.direct-llm.yml up -d
 ```yaml
 services:
   moviepilot-ai-recognizer-gateway:
-    image: liuyuexi/moviepilot-ai-recognizer-gateway:2.0.0-alpha.1
+    image: liuyuexi/moviepilot-ai-recognizer-gateway:2.0.0-alpha.2
     container_name: moviepilot-ai-recognizer-gateway
     environment:
       PORT: "9000"
-      MP_BASE_URL: "http://moviepilot-v2:3001" # 推荐优先用方案A；方案A=同网络容器名，方案B=宿主机内网地址；不要写 127.0.0.1
+      MP_BASE_URL: "http://192.168.x.x:3000" # 小白推荐直接写 MoviePilot 的宿主机内网地址和外部端口；熟悉 Docker 网络后也可改成 http://moviepilot-v2:3001；不要写 127.0.0.1
       MP_API_KEY: "replace_with_moviepilot_api_key" # 改成你的 MoviePilot API Key
       RECOGNIZER_MODE: "external_recognizer"
-      OPENCLAW_RECOGNIZE_URL: "http://openclaw-recognizer:19000/recognize" # 改成你的 OpenClaw / 外部识别端地址
+      OPENCLAW_RECOGNIZE_URL: "http://192.168.x.x:19000/recognize" # 这里不是固定可用地址，必须改成你自己已经部署好并能访问的 OpenClaw / 外部识别端 HTTP 接口
       TMDB_API_KEY: "replace_with_tmdb_api_key" # 推荐保留，用于最终 TMDB 复核
       RECOGNIZER_TIMEOUT_MS: "60000"
     ports:
@@ -129,21 +146,21 @@ docker compose -f docker-compose.openclaw.yml up -d
 两种方案启动后，插件里一般都填写这个 Webhook 地址：
 
 ```text
-http://moviepilot-ai-recognizer-gateway:9000/webhook
+http://192.168.x.x:9000/webhook
 ```
 
-如果你没有自定义 Docker 网络名，也可以在插件里直接填宿主机内网地址：
+如果你熟悉 Docker 网络，并且 MoviePilot 与 Gateway 在同一网络中，也可以写容器名：
 
 ```text
-http://192.168.x.x:9000/webhook
+http://moviepilot-ai-recognizer-gateway:9000/webhook
 ```
 
 `MP_BASE_URL` 推荐这样理解：
 
-- 方案 A（推荐）：`http://moviepilot-v2:3001`
+- 方案 A：`http://moviepilot-v2:3001`
   - 适用于 MoviePilot 和 Gateway 在同一 Docker 网络
-- 方案 B：`http://192.168.x.x:3001`
-  - 适用于没有自定义网络名，或不在同一 Docker 网络，但宿主机地址对 Gateway 容器可达
+- 方案 B（小白推荐）：`http://192.168.x.x:3000`
+  - 适用于不折腾 Docker 网络名，直接用 MoviePilot 宿主机内网地址和外部端口
 - 不推荐：`http://127.0.0.1:3001`
   - 容器内的 `127.0.0.1` 通常指向 Gateway 容器自己，不是 MoviePilot
 
@@ -178,12 +195,19 @@ OPENCLAW_RECOGNIZE_URL: "http://你的-openclaw-识别端/recognize"
 
 可以先不使用。
 
+注意：
+
+- OpenClaw 不是必须
+- 不是把 `OPENCLAW_RECOGNIZE_URL` 原样填上就能用
+- 你必须先自己把 OpenClaw 或其他外部识别端部署好，并确认这个 HTTP 地址真的能返回识别 JSON
+- 如果你没有现成的 OpenClaw，直接用 `direct_llm` 更省事
+
 ---
 
 ## 说明
 
 - 默认推荐 `direct_llm`
-- 默认推荐同机 Docker / 同网络部署
+- 默认推荐同机 Docker 部署
 - 不建议把跨主机 / 跨 NAS 作为默认方案
 - 配置了 `TMDB_API_KEY` 后，最终 `tmdb_id` 以 TMDB 复核结果为准
 

@@ -1,19 +1,18 @@
 services:
   moviepilot-ai-recognizer-gateway:
-    image: liuyuexi/moviepilot-ai-recognizer-gateway:2.0.0-alpha.1
+    image: liuyuexi/moviepilot-ai-recognizer-gateway:2.0.0-alpha.2
     container_name: moviepilot-ai-recognizer-gateway
     environment:
       PORT: "9000"
-      # 推荐：优先使用方案 A
-      # 方案 A：MoviePilot 与 Gateway 在同一 Docker 网络中，直接写 MoviePilot 容器名
+      # 小白推荐：直接写 MoviePilot 宿主机内网地址和外部端口
+      # 例如：http://192.168.1.10:3000
+      # 如果你熟悉 Docker 网络，也可以改成同网络容器名
       # 例如：http://moviepilot-v2:3001
-      # 方案 B：如果没有自定义网络名或不在同一 Docker 网络，可改成宿主机内网地址
-      # 例如：http://192.168.1.10:3001
-      # 不推荐：不要写成 http://127.0.0.1:3001 ，容器内的 127.0.0.1 指向当前容器自己
-      MP_BASE_URL: "http://moviepilot-v2:3001"
+      # 不推荐：http://127.0.0.1:3001
+      MP_BASE_URL: "http://192.168.x.x:3000"
       MP_API_KEY: "replace_with_moviepilot_api_key"
       RECOGNIZER_MODE: "external_recognizer"
-      OPENCLAW_RECOGNIZE_URL: "http://openclaw-recognizer:19000/recognize" # 改成你的 OpenClaw / 外部识别端地址
+      OPENCLAW_RECOGNIZE_URL: "http://192.168.x.x:19000/recognize" # 必须改成你自己已经部署好并可访问的 OpenClaw / 外部识别端 HTTP 地址
       TMDB_API_KEY: "replace_with_tmdb_api_key" # 推荐保留，用于最终 TMDB 复核
       RECOGNIZER_TIMEOUT_MS: "60000"
     ports:
