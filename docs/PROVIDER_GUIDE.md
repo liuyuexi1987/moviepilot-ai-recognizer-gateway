@@ -40,12 +40,12 @@ That keeps expectations realistic.
 ```env
 LLM_BASE_URL=https://integrate.api.nvidia.com/v1
 LLM_API_KEY=your_api_key
-LLM_MODEL=qwen/qwen3-5-122b-a10b
+LLM_MODEL=qwen/qwen3.5-122b-a10b
 ```
 
 Recommended note:
 
-- The NVIDIA-hosted `qwen/qwen3-5-122b-a10b` is a good first model to try for this gateway.
+- The NVIDIA-hosted `qwen/qwen3.5-122b-a10b` is a good first model to try for this gateway.
 - Free trial availability may change over time; users should confirm current quotas on the provider side.
 
 ### SiliconFlow style

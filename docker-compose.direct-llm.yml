@@ -8,7 +8,7 @@ services:
       MP_API_KEY: "replace_with_moviepilot_api_key" # 需要改：填你自己的 MoviePilot API Key
       LLM_BASE_URL: "https://integrate.api.nvidia.com/v1" # 按需改：默认是 NVIDIA NIM；如果你用 SiliconFlow 或其他兼容接口，这里改成对应根路径
       LLM_API_KEY: "replace_with_llm_api_key" # 需要改：填你自己的 LLM API Key；NVIDIA 的接口需要你自己申请，可自行上网搜索
-      LLM_MODEL: "qwen/qwen3-5-122b-a10b" # 按需改：默认是 NVIDIA 上的千问 122B；换模型就改这里
+      LLM_MODEL: "qwen/qwen3.5-122b-a10b" # 按需改：默认是 NVIDIA 上的千问 122B；换模型就改这里
       LLM_TEMPERATURE: "0.1"
       LLM_ENABLE_THINKING: "false"
       TMDB_API_KEY: "replace_with_tmdb_api_key" # 需要改：填你自己的 TMDB API Key，用于最终 TMDB 复核

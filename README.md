@@ -42,7 +42,7 @@ liuyuexi/moviepilot-ai-recognizer-gateway:latest
 
 - 我们实际用下来速度和可用性都更合适
 - 对这个项目来说，直接接 OpenAI 兼容接口最省事
-- NVIDIA 上的 `qwen/qwen3-5-122b-a10b` 目前实测效果不错，适合作为优先尝试的模型
+- NVIDIA 上的 `qwen/qwen3.5-122b-a10b` 目前实测效果不错，适合作为优先尝试的模型
 
 说明：
 
@@ -76,7 +76,7 @@ services:
       MP_API_KEY: "replace_with_moviepilot_api_key" # 需要改：填你自己的 MoviePilot API Key
       LLM_BASE_URL: "https://integrate.api.nvidia.com/v1" # 按需改：如果不用 NVIDIA，就改成你自己的 OpenAI 兼容接口根路径
       LLM_API_KEY: "replace_with_llm_api_key" # 需要改：填你自己的 LLM API Key；NVIDIA / SiliconFlow 这类都要自己申请
-      LLM_MODEL: "qwen/qwen3-5-122b-a10b" # 按需改：如果你换提供商或换模型，这里一起改
+      LLM_MODEL: "qwen/qwen3.5-122b-a10b" # 按需改：如果你换提供商或换模型，这里一起改
       LLM_TEMPERATURE: "0.1"
       LLM_ENABLE_THINKING: "false"
       TMDB_API_KEY: "replace_with_tmdb_api_key" # 需要改：填你自己的 TMDB API Key，用于最终 TMDB 复核

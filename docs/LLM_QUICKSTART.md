@@ -54,7 +54,7 @@ cp .env.llm.example .env
 如果你不确定怎么填，推荐先保持这些默认值不动：
 
 - `LLM_BASE_URL=https://integrate.api.nvidia.com/v1`
-- `LLM_MODEL=qwen/qwen3-5-122b-a10b`
+- `LLM_MODEL=qwen/qwen3.5-122b-a10b`
 - `LLM_TEMPERATURE=0.1`
 - `LLM_ENABLE_THINKING=false`
 
@@ -124,7 +124,7 @@ curl -s http://127.0.0.1:9000/recognize \
 如果你只是想先尽快跑通，推荐直接用下面这组配置思路：
 
 - `LLM_BASE_URL=https://integrate.api.nvidia.com/v1`
-- `LLM_MODEL=qwen/qwen3-5-122b-a10b`
+- `LLM_MODEL=qwen/qwen3.5-122b-a10b`
 - `LLM_ENABLE_THINKING=false`
 - `TMDB_API_KEY` 必填
 - MoviePilot 与 Gateway 同机部署，并加入同一 Docker 网络

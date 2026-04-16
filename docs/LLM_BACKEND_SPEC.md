@@ -41,7 +41,7 @@ Body:
 
 ```json
 {
-  "model": "qwen/qwen3-5-122b-a10b",
+  "model": "qwen/qwen3.5-122b-a10b",
   "temperature": 0.1,
   "messages": [
     {
