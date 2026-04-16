@@ -1,6 +1,11 @@
-# 千问快速测试
+# LLM 快速测试
 
-这个文档用于快速验证 `direct_llm` 路径是否可用。
+这个文档用于快速验证当前唯一的 LLM 路径是否可用。
+
+当前文档优先推荐：
+
+- `NVIDIA NIM`
+- `SiliconFlow`
 
 ## 1. 准备配置
 
@@ -18,7 +23,7 @@
 复制示例文件：
 
 ```bash
-cp .env.qwen.example .env
+cp .env.llm.example .env
 ```
 
 然后至少填写：
@@ -38,19 +43,18 @@ cp .env.qwen.example .env
 - `LLM_API_KEY`
 - `TMDB_API_KEY`
 
-如果你使用的是百炼 Coding Plan / OpenClaw 当前使用的那类端点，也可以把：
+如果你使用的是 SiliconFlow 或其他兼容端点，也可以把：
 
 - `LLM_BASE_URL`
 
 改成实际可用的根路径，例如：
 
-- `https://coding.dashscope.aliyuncs.com/v1`
+- `https://api.siliconflow.cn/v1`
 
 如果你不确定怎么填，推荐先保持这些默认值不动：
 
-- `RECOGNIZER_MODE=direct_llm`
-- `LLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1`
-- `LLM_MODEL=qwen-plus`
+- `LLM_BASE_URL=https://integrate.api.nvidia.com/v1`
+- `LLM_MODEL=qwen/qwen3-5-122b-a10b`
 - `LLM_TEMPERATURE=0.1`
 - `LLM_ENABLE_THINKING=false`
 
@@ -76,7 +80,7 @@ curl -s http://127.0.0.1:9000/healthz
 预期会看到：
 
 - `ok: true`
-- `recognizer_mode: direct_llm`
+- `backend: direct_llm`
 
 ## 4. 直接测试识别
 
@@ -119,9 +123,8 @@ curl -s http://127.0.0.1:9000/recognize \
 
 如果你只是想先尽快跑通，推荐直接用下面这组配置思路：
 
-- `RECOGNIZER_MODE=direct_llm`
-- `LLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1`
-- `LLM_MODEL=qwen-plus`
+- `LLM_BASE_URL=https://integrate.api.nvidia.com/v1`
+- `LLM_MODEL=qwen/qwen3-5-122b-a10b`
 - `LLM_ENABLE_THINKING=false`
 - `TMDB_API_KEY` 必填
 - MoviePilot 与 Gateway 同机部署，并加入同一 Docker 网络

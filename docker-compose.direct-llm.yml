@@ -1,6 +1,6 @@
 services:
   moviepilot-ai-recognizer-gateway:
-    image: liuyuexi/moviepilot-ai-recognizer-gateway:2.0.0-alpha.2
+    image: liuyuexi/moviepilot-ai-recognizer-gateway:2.1.0
     container_name: moviepilot-ai-recognizer-gateway
     environment:
       PORT: "9000"
@@ -11,10 +11,9 @@ services:
       # 不推荐：http://127.0.0.1:3001
       MP_BASE_URL: "http://192.168.x.x:3000"
       MP_API_KEY: "replace_with_moviepilot_api_key"
-      RECOGNIZER_MODE: "direct_llm"
-      LLM_BASE_URL: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+      LLM_BASE_URL: "https://integrate.api.nvidia.com/v1"
       LLM_API_KEY: "replace_with_llm_api_key"
-      LLM_MODEL: "qwen-plus" # 推荐先用 qwen-plus
+      LLM_MODEL: "qwen/qwen3-5-122b-a10b" # 推荐先试 NVIDIA 千问 122B
       LLM_TEMPERATURE: "0.1" # 温度越低越保守，越容易稳定输出 JSON；不懂就保持 0.1
       LLM_ENABLE_THINKING: "false" # 推荐保持 false，稳定输出 JSON
       TMDB_API_KEY: "replace_with_tmdb_api_key"

@@ -7,8 +7,7 @@ app.use(express.json({ limit: "1mb" }));
 const PORT = parseInt(process.env.PORT || "9000", 10);
 const MP_BASE_URL = process.env.MP_BASE_URL || "";
 const MP_API_KEY = process.env.MP_API_KEY || "";
-const RECOGNIZER_MODE = process.env.RECOGNIZER_MODE === "external_recognizer" ? "external_recognizer" : "direct_llm";
-const OPENCLAW_RECOGNIZE_URL = process.env.OPENCLAW_RECOGNIZE_URL || "";
+const BACKEND = "direct_llm";
 const LLM_BASE_URL = (process.env.LLM_BASE_URL || "").replace(/\/$/, "");
 const LLM_API_KEY = process.env.LLM_API_KEY || "";
 const LLM_MODEL = process.env.LLM_MODEL || "";
@@ -360,57 +359,16 @@ async function directLlmRecognize(title, recognizeMode) {
   };
 }
 
-async function externalRecognizer(payload) {
-  if (!OPENCLAW_RECOGNIZE_URL) {
-    throw new Error("OPENCLAW_RECOGNIZE_URL is not configured");
-  }
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), RECOGNIZER_TIMEOUT_MS);
-  try {
-    const res = await fetch(OPENCLAW_RECOGNIZE_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    });
-    if (!res.ok) {
-      throw new Error(`external recognizer returned ${res.status}`);
-    }
-    const data = await res.json();
-    return {
-      result: normalizeResult(data),
-      modelTmdbCandidate: extractTmdbCandidate(data),
-    };
-  } catch (error) {
-    if (error?.name === "AbortError") {
-      throw new Error(`external recognizer timed out after ${RECOGNIZER_TIMEOUT_MS}ms`);
-    }
-    throw error;
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
 async function recognizeTitle({ title, path, recognize_mode }) {
   if (!title) return emptyResult();
   if (isSportsOrNewsTitle(title)) {
     return { name: "", year: extractYearFromTitle(title), tmdb_id: 0, type: "tv", season: 0, episode: 0 };
   }
 
-  let result;
-  let tmdbCandidate = 0;
-  let searchHints = {};
-  if (RECOGNIZER_MODE === "external_recognizer") {
-    const external = await externalRecognizer({ title, path, recognize_mode });
-    result = external.result;
-    tmdbCandidate = external.modelTmdbCandidate;
-  } else {
-    const llm = await directLlmRecognize(title, recognize_mode);
-    result = llm.result;
-    tmdbCandidate = llm.modelTmdbCandidate;
-    searchHints = llm.searchHints || {};
-  }
+  const llm = await directLlmRecognize(title, recognize_mode);
+  let result = llm.result;
+  const tmdbCandidate = llm.modelTmdbCandidate;
+  const searchHints = llm.searchHints || {};
 
   if (!result.name) {
     result.name = cleanTitle(title);
@@ -480,7 +438,7 @@ app.get("/healthz", (req, res) => {
   res.json({
     ok: true,
     service: "moviepilot-ai-recognizer-gateway",
-    recognizer_mode: RECOGNIZER_MODE,
+    backend: BACKEND,
   });
 });
 
@@ -505,14 +463,14 @@ app.post("/recognize", async (req, res) => {
     return res.json({
       success: true,
       mode: recognizeMode,
-      backend: RECOGNIZER_MODE,
+      backend: BACKEND,
       result,
     });
   } catch (error) {
     return res.status(500).json({
       success: false,
       mode: recognizeMode,
-      backend: RECOGNIZER_MODE,
+      backend: BACKEND,
       message: error.message,
       result: emptyResult(),
     });
@@ -528,7 +486,7 @@ app.post("/webhook", async (req, res) => {
     return res.status(400).json({ success: false, message: "missing request_id or title" });
   }
 
-  console.log(`📥 收到识别请求：${request_id} - ${title} [mode=${recognizeMode}, backend=${RECOGNIZER_MODE}]`);
+  console.log(`📥 收到识别请求：${request_id} - ${title} [mode=${recognizeMode}, backend=${BACKEND}]`);
   res.status(202).json({ success: true, accepted: true, request_id });
 
   try {

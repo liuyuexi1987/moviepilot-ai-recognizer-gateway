@@ -1,6 +1,6 @@
 {
   "name": "moviepilot-ai-recognizer-gateway",
-  "version": "2.0.0-alpha.1",
+  "version": "2.1.0",
   "description": "Dockerized gateway for MoviePilot AI recognition fallback",
   "main": "server.js",
   "scripts": {

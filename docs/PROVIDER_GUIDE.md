@@ -2,13 +2,13 @@
 
 ## Recommended First-Class Provider Types
 
-For `v2.0`, documentation should explicitly prioritize:
+For `v2.1`, documentation should explicitly prioritize:
 
-1. OpenAI
-2. Qwen-compatible endpoints
-3. OpenRouter
+1. NVIDIA NIM
+2. SiliconFlow
+3. OpenAI / OpenRouter
 
-These three are enough to cover most early users while keeping docs realistic.
+This keeps the docs closer to the project's real-world usage.
 
 ## Why Not Claim Universal Support
 
@@ -22,7 +22,7 @@ Many providers say they are "OpenAI-compatible", but differences still appear in
 
 So the recommended wording is:
 
-> The gateway is designed for OpenAI-compatible Chat Completions APIs and has the best expected compatibility with OpenAI, Qwen-compatible endpoints, and OpenRouter.
+> The gateway is designed for OpenAI-compatible Chat Completions APIs and is currently best recommended with NVIDIA NIM, SiliconFlow, OpenAI, and OpenRouter style endpoints.
 
 ## Documentation Recommendation
 
@@ -35,29 +35,36 @@ That keeps expectations realistic.
 
 ## Provider Config Examples
 
-### OpenAI style
+### NVIDIA NIM style
 
 ```env
-RECOGNIZER_MODE=direct_llm
+LLM_BASE_URL=https://integrate.api.nvidia.com/v1
+LLM_API_KEY=your_api_key
+LLM_MODEL=qwen/qwen3-5-122b-a10b
+```
+
+Recommended note:
+
+- The NVIDIA-hosted `qwen/qwen3-5-122b-a10b` is a good first model to try for this gateway.
+- Free trial availability may change over time; users should confirm current quotas on the provider side.
+
+### SiliconFlow style
+
+```env
+LLM_BASE_URL=https://api.siliconflow.cn/v1
+LLM_API_KEY=your_api_key
+LLM_MODEL=copy_from_siliconflow_model_square
+```
+
+Recommended note:
+
+- SiliconFlow is a good fallback when users want low-cost or temporarily free OpenAI-compatible models.
+- Free models and quotas can change, so docs should avoid hard-coding long-lived "free forever" claims.
+
+### Other compatible providers
+
+```env
 LLM_BASE_URL=https://api.openai.com/v1
 LLM_API_KEY=your_api_key
 LLM_MODEL=gpt-4o-mini
-```
-
-### Qwen compatible style
-
-```env
-RECOGNIZER_MODE=direct_llm
-LLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
-LLM_API_KEY=your_api_key
-LLM_MODEL=qwen-plus
-```
-
-### OpenRouter style
-
-```env
-RECOGNIZER_MODE=direct_llm
-LLM_BASE_URL=https://openrouter.ai/api/v1
-LLM_API_KEY=your_api_key
-LLM_MODEL=openai/gpt-4o-mini
 ```

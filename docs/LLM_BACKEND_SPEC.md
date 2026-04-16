@@ -2,23 +2,15 @@
 
 ## Goal
 
-Define a stable direct-LLM backend contract for `v2.0`.
+Define a stable direct-LLM backend contract for `v2.1`.
 
 This backend is intended to work with **OpenAI-compatible Chat Completions APIs**.
 
-## Supported Backend Modes
+## Supported Backend
 
-### 1. `direct_llm`
-
-Primary v2.0 mode.
+### `direct_llm`
 
 The gateway directly calls a provider that exposes an OpenAI-compatible chat-completions endpoint.
-
-### 2. `external_recognizer`
-
-Compatibility mode.
-
-The gateway delegates recognition to a user-managed external recognizer endpoint, such as an OpenClaw-based service.
 
 ## Required Environment Variables
 
@@ -27,22 +19,15 @@ The gateway delegates recognition to a user-managed external recognizer endpoint
 - `PORT`
 - `MP_BASE_URL`
 - `MP_API_KEY`
-- `RECOGNIZER_MODE`
 - `RECOGNIZER_TIMEOUT_MS`
-
-### For `direct_llm`
 
 - `LLM_BASE_URL`
 - `LLM_API_KEY`
 - `LLM_MODEL`
 
-### Optional For `direct_llm`
+### Optional
 
 - `TMDB_API_KEY`
-
-### For `external_recognizer`
-
-- `OPENCLAW_RECOGNIZE_URL`
 
 ## Expected OpenAI-Compatible Request Shape
 
@@ -56,7 +41,7 @@ Body:
 
 ```json
 {
-  "model": "qwen-plus",
+  "model": "qwen/qwen3-5-122b-a10b",
   "temperature": 0.1,
   "messages": [
     {
@@ -94,7 +79,7 @@ Notes:
 
 ## Compatibility Statement
 
-v2.0 should describe direct LLM mode as:
+v2.1 should describe the gateway as:
 
 > Compatible with most OpenAI-compatible Chat Completions APIs.
 

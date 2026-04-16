@@ -9,39 +9,34 @@
 
 ## 推荐标签策略
 
-首发阶段建议这样发：
+当前版本建议直接使用：
 
-- `2.0.0-alpha.1`
-- `2.0.0-alpha.2`
-- `2.0.0-beta.1`
-
-只有在第一个稳定版发布后，才开始使用：
-
-- `2.0.0`
+- `2.1.0`
 - `latest`
 
-## 为什么不建议一开始就推 latest
+## 为什么现在建议同步更新 latest
 
-当前 `v2.0` 仍在快速迭代：
+当前 `v2.1.0` 已经把后端收敛成单一路径：
 
-- `direct_llm` 是主路径
-- `external_recognizer` 是兼容路径
-- 配置字段和日志语义还在收敛
+- 只保留 `direct_llm`
+- 配置字段更少
+- 更适合作为默认稳定镜像
 
-如果过早把 alpha 版指向 `latest`，对 NAS 用户不够友好。
+当前这个版本已经是稳定收口版，DockerHub 建议同时维护版本 tag 和 `latest`。
 
 ## 手工构建
 
 如果只验证当前本机架构：
 
 ```bash
-docker build -t liuyuexi/moviepilot-ai-recognizer-gateway:2.0.0-alpha.1 .
+docker build -t liuyuexi/moviepilot-ai-recognizer-gateway:2.1.0 .
+docker tag liuyuexi/moviepilot-ai-recognizer-gateway:2.1.0 liuyuexi/moviepilot-ai-recognizer-gateway:latest
 ```
 
 或者直接使用脚本：
 
 ```bash
-bash scripts/dockerhub-alpha-release.sh
+bash scripts/dockerhub-release.sh
 ```
 
 说明：
@@ -56,7 +51,7 @@ bash scripts/dockerhub-alpha-release.sh
 docker run --rm \
   --env-file .env \
   -p 19090:9000 \
-  liuyuexi/moviepilot-ai-recognizer-gateway:2.0.0-alpha.1
+  liuyuexi/moviepilot-ai-recognizer-gateway:2.1.0
 ```
 
 另开一个终端验证：
@@ -68,13 +63,14 @@ curl -s http://127.0.0.1:19090/healthz
 ## 推送镜像
 
 ```bash
-docker push liuyuexi/moviepilot-ai-recognizer-gateway:2.0.0-alpha.1
+docker push liuyuexi/moviepilot-ai-recognizer-gateway:2.1.0
+docker push liuyuexi/moviepilot-ai-recognizer-gateway:latest
 ```
 
 或者使用脚本直接构建并推送多架构镜像：
 
 ```bash
-bash scripts/dockerhub-alpha-release.sh --push
+bash scripts/dockerhub-release.sh --push
 ```
 
 推送完成后，同一个 tag 将同时支持：
@@ -98,7 +94,7 @@ bash scripts/pre-release-check.sh
 
 ## 首发阶段建议
 
-- 明确把 `direct_llm` 写成主推模式
-- 把 `external_recognizer` 写成兼容模式
-- Release 文案里写清楚：`latest` 暂不提供
+- 明确写清楚当前版本只保留 `direct_llm`
+- Release 文案里写清楚轻量化目标和 OpenClaw 移除原因
+- 稳定版同步更新 DockerHub `latest`
 - 至少做一次容器级 `/recognize` 实测再发版
