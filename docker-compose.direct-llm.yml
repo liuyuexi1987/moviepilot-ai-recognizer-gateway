@@ -4,19 +4,14 @@ services:
     container_name: moviepilot-ai-recognizer-gateway
     environment:
       PORT: "9000"
-      # 小白推荐：直接写 MoviePilot 宿主机内网地址和外部端口
-      # 例如：http://192.168.1.10:3000
-      # 如果你熟悉 Docker 网络，也可以改成同网络容器名
-      # 例如：http://moviepilot-v2:3001
-      # 不推荐：http://127.0.0.1:3001
-      MP_BASE_URL: "http://192.168.x.x:3000"
-      MP_API_KEY: "replace_with_moviepilot_api_key"
-      LLM_BASE_URL: "https://integrate.api.nvidia.com/v1"
-      LLM_API_KEY: "replace_with_llm_api_key"
-      LLM_MODEL: "qwen/qwen3-5-122b-a10b" # 推荐先试 NVIDIA 千问 122B
-      LLM_TEMPERATURE: "0.1" # 温度越低越保守，越容易稳定输出 JSON；不懂就保持 0.1
-      LLM_ENABLE_THINKING: "false" # 推荐保持 false，稳定输出 JSON
-      TMDB_API_KEY: "replace_with_tmdb_api_key"
+      MP_BASE_URL: "http://192.168.x.x:3000" # 需要改：填你自己的 MoviePilot 地址；小白可直接写宿主机内网地址，不要写 127.0.0.1
+      MP_API_KEY: "replace_with_moviepilot_api_key" # 需要改：填你自己的 MoviePilot API Key
+      LLM_BASE_URL: "https://integrate.api.nvidia.com/v1" # 按需改：默认是 NVIDIA NIM；如果你用 SiliconFlow 或其他兼容接口，这里改成对应根路径
+      LLM_API_KEY: "replace_with_llm_api_key" # 需要改：填你自己的 LLM API Key；NVIDIA 的接口需要你自己申请，可自行上网搜索
+      LLM_MODEL: "qwen/qwen3-5-122b-a10b" # 按需改：默认是 NVIDIA 上的千问 122B；换模型就改这里
+      LLM_TEMPERATURE: "0.1"
+      LLM_ENABLE_THINKING: "false"
+      TMDB_API_KEY: "replace_with_tmdb_api_key" # 需要改：填你自己的 TMDB API Key，用于最终 TMDB 复核
       RECOGNIZER_TIMEOUT_MS: "60000"
     ports:
       - "9000:9000"
