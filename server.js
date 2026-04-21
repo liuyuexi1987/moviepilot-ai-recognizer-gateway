@@ -13,8 +13,18 @@ const LLM_API_KEY = process.env.LLM_API_KEY || "";
 const LLM_MODEL = process.env.LLM_MODEL || "";
 const TMDB_API_KEY = process.env.TMDB_API_KEY || "";
 const RECOGNIZER_TIMEOUT_MS = parseInt(process.env.RECOGNIZER_TIMEOUT_MS || "60000", 10);
+const TMDB_TIMEOUT_MS = parseInt(process.env.TMDB_TIMEOUT_MS || "3500", 10);
 const LLM_TEMPERATURE = Number.parseFloat(process.env.LLM_TEMPERATURE || "0.1");
 const LLM_ENABLE_THINKING = /^(1|true|yes|on)$/i.test(process.env.LLM_ENABLE_THINKING || "false");
+const RECOGNIZE_CACHE_TTL_MS = parseInt(process.env.RECOGNIZE_CACHE_TTL_MS || "900000", 10);
+const RECOGNIZE_MISS_CACHE_TTL_MS = parseInt(process.env.RECOGNIZE_MISS_CACHE_TTL_MS || "300000", 10);
+const TMDB_CACHE_TTL_MS = parseInt(process.env.TMDB_CACHE_TTL_MS || "21600000", 10);
+const TMDB_MISS_CACHE_TTL_MS = parseInt(process.env.TMDB_MISS_CACHE_TTL_MS || "600000", 10);
+const CACHE_MAX_ENTRIES = parseInt(process.env.CACHE_MAX_ENTRIES || "500", 10);
+
+const recognizeCache = new Map();
+const tmdbCache = new Map();
+const inflightRecognitions = new Map();
 
 function normalizeTitle(t) {
   if (!t) return "";
@@ -132,6 +142,72 @@ function emptyResult() {
   return { name: "", year: 0, tmdb_id: 0, type: "movie", season: 0, episode: 0 };
 }
 
+function elapsedSeconds(startTime) {
+  return Number(((Date.now() - startTime) / 1000).toFixed(2));
+}
+
+function cloneJson(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function pruneCache(map) {
+  while (map.size > CACHE_MAX_ENTRIES) {
+    const oldestKey = map.keys().next().value;
+    if (typeof oldestKey === "undefined") break;
+    map.delete(oldestKey);
+  }
+}
+
+function getCacheEntry(map, key) {
+  const entry = map.get(key);
+  if (!entry) return null;
+  if (entry.expiresAt <= Date.now()) {
+    map.delete(key);
+    return null;
+  }
+  return cloneJson(entry.value);
+}
+
+function setCacheEntry(map, key, value, ttlMs) {
+  map.set(key, {
+    value: cloneJson(value),
+    expiresAt: Date.now() + ttlMs,
+  });
+  pruneCache(map);
+}
+
+async function fetchJsonWithTimeout(url, { headers, method = "GET", body, timeoutMs, errorLabel }) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      method,
+      headers,
+      body,
+      signal: controller.signal,
+    });
+    return res;
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new Error(`${errorLabel} timed out after ${timeoutMs}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function formatTimingLog(timings) {
+  if (timings?.cache_hit) {
+    return "⏱️  识别阶段：cache=hit llm=0s tmdb=0s total=0s";
+  }
+  return `⏱️  识别阶段：llm=${timings.llm_s}s tmdb=${timings.tmdb_s}s total=${timings.total_s}s`;
+}
+
+function formatRecognizeDuration(timings) {
+  return timings?.cache_hit ? "cache hit" : `${timings.total_s}s`;
+}
+
 function pushQuery(list, seen, label, value) {
   const q = String(value || "").trim();
   if (!q) return;
@@ -178,22 +254,32 @@ async function tmdbSearchOnce(name, year, type, lang) {
   if (!name || !TMDB_API_KEY) return 0;
   const sanitizedName = sanitizeModelTitle(name);
   if (!sanitizedName) return 0;
+  const cacheKey = [type, lang, year || 0, normalizeTitle(sanitizedName)].join("|");
+  const cachedId = getCacheEntry(tmdbCache, cacheKey);
+  if (cachedId !== null) {
+    return cachedId;
+  }
   const isTv = type === "tv";
   const url = isTv
     ? `https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(sanitizedName)}&first_air_date_year=${year || ""}&language=${lang}`
     : `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(sanitizedName)}&year=${year || ""}&language=${lang}`;
 
   try {
-    const res = await fetch(url);
+    const res = await fetchJsonWithTimeout(url, {
+      timeoutMs: TMDB_TIMEOUT_MS,
+      errorLabel: `TMDB search [lang=${lang}, type=${type}, year=${year || 0}, query=${sanitizedName}]`,
+    });
     if (!res.ok) {
       const text = await res.text();
       console.log(`TMDB 请求失败 [lang=${lang}, type=${type}, year=${year || 0}, query=${sanitizedName}] -> ${res.status} ${text.slice(0, 200)}`);
+      setCacheEntry(tmdbCache, cacheKey, 0, TMDB_MISS_CACHE_TTL_MS);
       return 0;
     }
     const data = await res.json();
     const results = data?.results || [];
     if (!results.length) {
       console.log(`TMDB 空结果 [lang=${lang}, type=${type}, year=${year || 0}, query=${sanitizedName}]`);
+      setCacheEntry(tmdbCache, cacheKey, 0, TMDB_MISS_CACHE_TTL_MS);
     }
     for (const r of results) {
       const t1 = isTv ? r.name : r.title;
@@ -203,8 +289,14 @@ async function tmdbSearchOnce(name, year, type, lang) {
         const ry = d ? parseInt(String(d).slice(0, 4), 10) || 0 : 0;
         if (!ry || ry !== year) continue;
       }
-      if (t1 && titleMatch(sanitizedName, t1)) return r.id || 0;
-      if (t2 && titleMatch(sanitizedName, t2)) return r.id || 0;
+      if (t1 && titleMatch(sanitizedName, t1)) {
+        setCacheEntry(tmdbCache, cacheKey, r.id || 0, TMDB_CACHE_TTL_MS);
+        return r.id || 0;
+      }
+      if (t2 && titleMatch(sanitizedName, t2)) {
+        setCacheEntry(tmdbCache, cacheKey, r.id || 0, TMDB_CACHE_TTL_MS);
+        return r.id || 0;
+      }
     }
     const sampleTitles = results.slice(0, 3).map((r) => (isTv ? (r.name || r.original_name) : (r.title || r.original_title))).filter(Boolean);
     if (sampleTitles.length) {
@@ -213,6 +305,7 @@ async function tmdbSearchOnce(name, year, type, lang) {
   } catch (error) {
     console.log(`TMDB 查询异常 [lang=${lang}, type=${type}, year=${year || 0}, query=${sanitizedName}] -> ${error.message}`);
   }
+  setCacheEntry(tmdbCache, cacheKey, 0, TMDB_MISS_CACHE_TTL_MS);
   return 0;
 }
 
@@ -359,13 +452,24 @@ async function directLlmRecognize(title, recognizeMode) {
   };
 }
 
-async function recognizeTitle({ title, path, recognize_mode }) {
-  if (!title) return emptyResult();
+async function recognizeTitleUncached({ title, path, recognize_mode }) {
+  if (!title) {
+    return {
+      result: emptyResult(),
+      timings: { llm_s: 0, tmdb_s: 0, total_s: 0 },
+    };
+  }
   if (isSportsOrNewsTitle(title)) {
-    return { name: "", year: extractYearFromTitle(title), tmdb_id: 0, type: "tv", season: 0, episode: 0 };
+    return {
+      result: { name: "", year: extractYearFromTitle(title), tmdb_id: 0, type: "tv", season: 0, episode: 0 },
+      timings: { llm_s: 0, tmdb_s: 0, total_s: 0 },
+    };
   }
 
+  const recognizeStart = Date.now();
+  const llmStart = Date.now();
   const llm = await directLlmRecognize(title, recognize_mode);
+  const llmTime = elapsedSeconds(llmStart);
   let result = llm.result;
   const tmdbCandidate = llm.modelTmdbCandidate;
   const searchHints = llm.searchHints || {};
@@ -382,7 +486,9 @@ async function recognizeTitle({ title, path, recognize_mode }) {
     if (!result.episode) result.episode = se.episode;
   }
 
+  let tmdbTime = 0;
   if (TMDB_API_KEY) {
+    const tmdbStart = Date.now();
     if (tmdbCandidate) {
       console.log(`收到模型候选 tmdb_id=${tmdbCandidate}，最终结果仍以 TMDB 复核为准`);
     }
@@ -410,10 +516,55 @@ async function recognizeTitle({ title, path, recognize_mode }) {
     } else {
       console.log(`TMDB 未命中 [mode=${recognize_mode}]`);
     }
+    tmdbTime = elapsedSeconds(tmdbStart);
   } else {
     result.tmdb_id = tmdbCandidate || 0;
   }
-  return normalizeResult(result);
+  return {
+    result: normalizeResult(result),
+    timings: {
+      llm_s: llmTime,
+      tmdb_s: tmdbTime,
+      total_s: elapsedSeconds(recognizeStart),
+    },
+  };
+}
+
+async function recognizeTitle(input) {
+  const title = String(input?.title || "").trim();
+  const recognizeMode = normalizeRecognizeMode(input?.recognize_mode);
+  const cacheKey = `${recognizeMode}|${normalizeTitle(title)}`;
+
+  if (cacheKey !== `${recognizeMode}|`) {
+    const cached = getCacheEntry(recognizeCache, cacheKey);
+    if (cached) {
+      cached.timings = { llm_s: 0, tmdb_s: 0, total_s: 0, cache_hit: true };
+      return cached;
+    }
+    if (inflightRecognitions.has(cacheKey)) {
+      return cloneJson(await inflightRecognitions.get(cacheKey));
+    }
+  }
+
+  const task = recognizeTitleUncached({
+    ...input,
+    title,
+    recognize_mode: recognizeMode,
+  });
+
+  if (cacheKey === `${recognizeMode}|`) {
+    return task;
+  }
+
+  inflightRecognitions.set(cacheKey, task);
+  try {
+    const recognize = await task;
+    const ttlMs = recognize.result?.tmdb_id ? RECOGNIZE_CACHE_TTL_MS : RECOGNIZE_MISS_CACHE_TTL_MS;
+    setCacheEntry(recognizeCache, cacheKey, recognize, ttlMs);
+    return cloneJson(recognize);
+  } finally {
+    inflightRecognitions.delete(cacheKey);
+  }
 }
 
 async function callbackToMoviePilot(requestId, title, path, result) {
@@ -455,16 +606,17 @@ app.post("/recognize", async (req, res) => {
   }
 
   try {
-    const result = await recognizeTitle({
+    const recognize = await recognizeTitle({
       title,
       path: path || "",
       recognize_mode: recognizeMode,
     });
+    console.log(formatTimingLog(recognize.timings));
     return res.json({
       success: true,
       mode: recognizeMode,
       backend: BACKEND,
-      result,
+      result: recognize.result,
     });
   } catch (error) {
     return res.status(500).json({
@@ -490,16 +642,16 @@ app.post("/webhook", async (req, res) => {
   res.status(202).json({ success: true, accepted: true, request_id });
 
   try {
-    const result = await recognizeTitle({ title, path, recognize_mode: recognizeMode });
-    const recognizeTime = ((Date.now() - startTime) / 1000).toFixed(2);
-    console.log(`🎯 识别结果 (${recognizeTime}s): ${JSON.stringify(result)}`);
+    const recognize = await recognizeTitle({ title, path, recognize_mode: recognizeMode });
+    console.log(formatTimingLog(recognize.timings));
+    console.log(`🎯 识别结果 (${formatRecognizeDuration(recognize.timings)}): ${JSON.stringify(recognize.result)}`);
     const cbStart = Date.now();
-    const cb = await callbackToMoviePilot(request_id, title, path || "", result);
-    const cbTime = ((Date.now() - cbStart) / 1000).toFixed(2);
+    const cb = await callbackToMoviePilot(request_id, title, path || "", recognize.result);
+    const cbTime = elapsedSeconds(cbStart);
     console.log(`📤 回调结果：status=${cb.status}, body=${String(cb.body).slice(0, 120)}... (${cbTime}s)`);
-    console.log(`⏱️  总耗时：${((Date.now() - startTime) / 1000).toFixed(2)}s`);
+    console.log(`⏱️  总耗时：${elapsedSeconds(startTime)}s`);
   } catch (error) {
-    const total = ((Date.now() - startTime) / 1000).toFixed(2);
+    const total = elapsedSeconds(startTime);
     console.error(`❌ 识别失败 (${total}s): ${error.message}`);
     const cb = await callbackToMoviePilot(request_id, title, path || "", emptyResult());
     console.error(`📤 失败回调：status=${cb.status}, body=${String(cb.body).slice(0, 120)}...`);
