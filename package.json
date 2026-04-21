@@ -1,6 +1,6 @@
 {
   "name": "moviepilot-ai-recognizer-gateway",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Dockerized MoviePilot AI recognition gateway with direct LLM recognition and TMDB verification",
   "main": "server.js",
   "scripts": {

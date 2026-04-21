@@ -1,5 +1,12 @@
 # Changelog
 
+## v2.1.1
+
+- adds TMDB timeout protection to reduce long-tail request stalls
+- caches TMDB lookups and repeated recognition results for faster retries
+- deduplicates same-title in-flight recognition work to avoid duplicate upstream calls
+- keeps timing logs explicit for `llm`, `tmdb`, `total`, and `cache hit`
+
 ## v2.1.0
 
 - removes the `external_recognizer` / OpenClaw compatibility path

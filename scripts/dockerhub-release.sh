@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
 IMAGE_REPO="${IMAGE_REPO:-liuyuexi/moviepilot-ai-recognizer-gateway}"
-IMAGE_TAG="${IMAGE_TAG:-2.1.0}"
+IMAGE_TAG="${IMAGE_TAG:-2.1.1}"
 FULL_IMAGE="${IMAGE_REPO}:${IMAGE_TAG}"
 LATEST_IMAGE="${IMAGE_REPO}:latest"
 PUSH_IMAGE="false"

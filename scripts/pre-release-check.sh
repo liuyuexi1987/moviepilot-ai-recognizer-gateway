@@ -22,4 +22,4 @@ docker build -t moviepilot-ai-recognizer-gateway:precheck . >/dev/null
 
 echo
 echo "网关仓库发布前检查通过。"
-echo "建议发布标签：v2.1.0 / 2.1.0"
+echo "建议发布标签：v2.1.1 / 2.1.1"

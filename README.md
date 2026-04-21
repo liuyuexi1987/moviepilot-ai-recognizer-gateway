@@ -2,12 +2,12 @@
 
 一个给 MoviePilot 用的 AI 识别网关，面向 NAS 用户设计。
 
-从 `v2.1.0` 开始，这个项目就是一个单一路径的 LLM 识别网关。目标很明确：部署更轻、依赖更少、响应更快。
+从 `v2.1.0` 开始，这个项目就是一个单一路径的 LLM 识别网关。到了 `v2.1.1`，又继续补上了性能优化，目标很明确：部署更轻、依赖更少、响应更快。
 
 当前推荐 DockerHub 镜像：
 
 ```text
-liuyuexi/moviepilot-ai-recognizer-gateway:2.1.0
+liuyuexi/moviepilot-ai-recognizer-gateway:2.1.1
 liuyuexi/moviepilot-ai-recognizer-gateway:latest
 ```
 
@@ -43,6 +43,7 @@ liuyuexi/moviepilot-ai-recognizer-gateway:latest
 - 我们实际用下来速度和可用性都更合适
 - 对这个项目来说，直接接 OpenAI 兼容接口最省事
 - NVIDIA 上的 `qwen/qwen3.5-122b-a10b` 目前实测效果不错，适合作为优先尝试的模型
+- `v2.1.1` 额外补了 TMDB 短超时、识别缓存和重复请求去重，对重复整理和 webhook 场景更友好
 
 说明：
 
@@ -68,7 +69,7 @@ liuyuexi/moviepilot-ai-recognizer-gateway:latest
 ```yaml
 services:
   moviepilot-ai-recognizer-gateway:
-    image: liuyuexi/moviepilot-ai-recognizer-gateway:2.1.0
+    image: liuyuexi/moviepilot-ai-recognizer-gateway:2.1.1
     container_name: moviepilot-ai-recognizer-gateway
     environment:
       PORT: "9000"

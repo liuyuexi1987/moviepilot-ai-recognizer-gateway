@@ -1,13 +1,13 @@
 services:
   moviepilot-ai-recognizer-gateway:
-    image: liuyuexi/moviepilot-ai-recognizer-gateway:2.1.0
+    image: liuyuexi/moviepilot-ai-recognizer-gateway:2.1.1
     container_name: moviepilot-ai-recognizer-gateway
     labels:
       org.opencontainers.image.title: "moviepilot-ai-recognizer-gateway"
       org.opencontainers.image.description: "Dockerized MoviePilot AI recognition gateway with direct LLM recognition and TMDB verification"
       org.opencontainers.image.source: "https://github.com/liuyuexi1987/moviepilot-ai-recognizer-gateway"
       org.opencontainers.image.url: "https://github.com/liuyuexi1987/moviepilot-ai-recognizer-gateway"
-      org.opencontainers.image.version: "2.1.0"
+      org.opencontainers.image.version: "2.1.1"
       org.opencontainers.image.licenses: "MIT"
     environment:
       PORT: "9000"
