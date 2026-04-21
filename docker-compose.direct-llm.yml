@@ -2,6 +2,13 @@ services:
   moviepilot-ai-recognizer-gateway:
     image: liuyuexi/moviepilot-ai-recognizer-gateway:2.1.0
     container_name: moviepilot-ai-recognizer-gateway
+    labels:
+      org.opencontainers.image.title: "moviepilot-ai-recognizer-gateway"
+      org.opencontainers.image.description: "Dockerized MoviePilot AI recognition gateway with direct LLM recognition and TMDB verification"
+      org.opencontainers.image.source: "https://github.com/liuyuexi1987/moviepilot-ai-recognizer-gateway"
+      org.opencontainers.image.url: "https://github.com/liuyuexi1987/moviepilot-ai-recognizer-gateway"
+      org.opencontainers.image.version: "2.1.0"
+      org.opencontainers.image.licenses: "MIT"
     environment:
       PORT: "9000"
       MP_BASE_URL: "http://192.168.x.x:3000" # 需要改：填你自己的 MoviePilot 地址；小白可直接写宿主机内网地址，不要写 127.0.0.1
